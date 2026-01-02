@@ -1,25 +1,9 @@
 "use client";
 
-import {ReactFlow, useNodesState, useEdgesState, Background, Handle, Position, NodeProps, BaseEdge, EdgeProps, getBezierPath, Node} from "@xyflow/react";
+import {ReactFlow, useNodesState, useEdgesState, Background, Handle, Position, NodeProps, BaseEdge, EdgeProps, getBezierPath} from "@xyflow/react";
+import type {HeroNode} from "@/lib/types";
 import "@xyflow/react/dist/style.css";
 import Image from "next/image";
-
-// --- 0. DEFINE TYPES ---
-// We define exactly what data our nodes can have
-type HeroNodeData = {
-	label?: string;
-	type?: string;
-	image?: string;
-	text?: string;
-	width?: string;
-	height?: string;
-	gradientClass?: string;
-	// Index signature required by React Flow
-	[key: string]: unknown;
-};
-
-// Define a custom Node type that uses our data
-type HeroNode = Node<HeroNodeData>;
 
 // --- 1. CUSTOM NODE (Polymorphic Sizing) ---
 const MarketingCardNode = ({data}: NodeProps<HeroNode>) => {
