@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #09090b;
+  --color-primary: #dfff4f; /* That specific Neon Yellow from screenshot */
+  --color-grid: #e5e5e5;
+}
+
+/* Light Mode Grid Background */
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  /* Subtle grid pattern matching the screenshot */
+  background-image: 
+    linear-gradient(to right, var(--color-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-grid) 1px, transparent 1px);
+  background-size: 80px 80px;
+}
