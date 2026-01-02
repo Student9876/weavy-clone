@@ -49,17 +49,17 @@ export default function Navbar() {
 					{/* Navigation Links - Hidden on mobile */}
 					<nav className="flex items-center text-[13px] text-black/70 tracking-wide">
 						{/* Show all items above 840px */}
-						<div className="flex gap-4 max-[840px]:hidden">
+						<div className="flex gap-4 max-[840px]:hidden mt-2">
 							{["COLLECTIVE", "ENTERPRISE", "PRICING", "REQUEST A DEMO", "SIGN IN"].map((item) => (
-								<Link key={item} href={item === "SIGN IN" ? "/login" : "#"} className="hover:text-black transition-colors font-bold">
+								<Link key={item} href={item === "SIGN IN" ? "/login" : "#"} className="hover:text-black transition-colors font-medium">
 									{item}
 								</Link>
 							))}
 						</div>
 						{/* Show only PRICING and SIGN IN at 840px and below */}
-						<div className="hidden gap-4 max-[840px]:flex">
+						<div className="hidden gap-4 max-[840px]:flex mt-2">
 							{["PRICING", "SIGN IN"].map((item) => (
-								<Link key={item} href={item === "SIGN IN" ? "/login" : "#"} className="hover:text-black transition-colors font-bold">
+								<Link key={item} href={item === "SIGN IN" ? "/login" : "#"} className="hover:text-black transition-colors font-medium">
 									{item}
 								</Link>
 							))}
@@ -72,14 +72,14 @@ export default function Navbar() {
 							scale: isScrolled ? 0.9 : 1,
 						}}
 						transition={{duration: 0.3}}
-						className="flex items-center">
+						className="flex items-center mt-1">
 						<Link
 							href="/editor"
 							className={`
     transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]
-    shadow-sm hover:bg-[#ccff00] active:scale-95
+    hover:bg-[#ccff00] active:scale-95
     cursor-pointer select-none
-    font-dmsans font-normal text-black
+    font-normal text-black rounded-md
     bg-[#f7ff9e] flex items-end justify-start whitespace-nowrap h-full
     ${isScrolled ? "h-12 py-1 text-lg leading-none" : "h-[89.9px] w-[202px] pt-[10px] pb-[7.92px] pl-[12.76px] pr-[24.36px] text-[40px] leading-[40px]"}
   `}
@@ -93,7 +93,7 @@ export default function Navbar() {
 									marginTop: isScrolled ? 0 : 24, // 24px ≈ mt-6
 								}}
 								transition={{duration: 0.3, ease: "easeInOut"}}
-								className="block w-full text-left">
+								className="block w-full text-left mx-1.5">
 								Start Now
 							</motion.span>
 						</Link>
