@@ -41,19 +41,17 @@ function HeroSection() {
 	return (
 		<section className="relative h-screen flex flex-col justify-center px-6 overflow-hidden bg-[#FBFBFB]">
 			{/* Grid Background */}
-			<div className="absolute inset-0 bg-[linear-gradient(to_right,#e5e5e5_1px,transparent_1px),linear-gradient(to_bottom,#e5e5e5_1px,transparent_1px)] bg-[size:60px_60px] pointer-events-none opacity-60" />
+			<div className="absolute inset-0 bg-[linear-gradient(to_right,#e5e5e5_1px,transparent_1px),linear-gradient(to_bottom,#e5e5e5_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-60" />
 
 			{/* Main Content Container */}
-			<div className="max-w-[1800px] mx-auto w-full z-10 grid grid-cols-12 gap-4 h-[60vh] items-center">
+			<div className="mx-auto w-full px-6 z-10 grid grid-cols-12 gap-4 h-[60vh] items-center">
 				{/* Left Column: "Weavy" */}
 				<div className="col-span-12 md:col-span-4 flex items-start h-full pt-10">
-					<h1 className="text-[14vw] md:text-[11vw] leading-[0.8] font-medium tracking-[-0.04em] text-black">Weavy</h1>
+					<h1 className="text-[14vw] md:text-[5vw] leading-[0.8] font-medium tracking-[-0.04em] text-black">Weavy</h1>
 				</div>
-
 				{/* Right Column: "Artistic Intelligence" + Subtext */}
 				<div className="col-span-12 md:col-span-8 flex flex-col justify-start h-full pt-10 pl-0 md:pl-12">
-					<h2 className="text-[9vw] md:text-[8.5vw] leading-[0.9] font-medium tracking-[-0.04em] text-black mb-8">Artistic Intelligence</h2>
-
+					<h2 className="text-[9vw] md:text-[5vw] leading-[0.9] font-medium tracking-[-0.04em] text-black mb-8">Artistic Intelligence</h2>
 					<p className="text-lg md:text-[1.4rem] leading-relaxed text-black/70 max-w-[600px] font-medium">
 						Turn your creative vision into scalable workflows. Access all AI models and professional editing tools in one node based platform.
 					</p>
