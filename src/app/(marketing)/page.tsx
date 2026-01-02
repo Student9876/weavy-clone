@@ -3,6 +3,7 @@
 import React, {useRef, useState} from "react";
 import {motion, useScroll, useMotionValueEvent} from "framer-motion";
 import Image from "next/image";
+import HeroWorkflow from "@/components/marketing/HeroWorkflow"; // Import the new component
 
 // --- DATA ---
 const aiModels = [
@@ -35,72 +36,38 @@ export default function LandingPage() {
 		</div>
 	);
 }
-
-// --- 1. HERO SECTION (Pixel Perfect Typography) ---
 function HeroSection() {
 	return (
-		<section className="relative h-screen flex flex-col justify-center px-6 overflow-hidden bg-[#FBFBFB]">
-			{/* Grid Background */}
+		<section className="relative min-h-[120vh] flex flex-col pt-32 px-6 overflow-hidden bg-[#FBFBFB]">
+			{/* Background Grid */}
 			<div className="absolute inset-0 bg-[linear-gradient(to_right,#e5e5e5_1px,transparent_1px),linear-gradient(to_bottom,#e5e5e5_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-60" />
 
-			{/* Main Content Container */}
-			<div className="mx-auto w-full px-6 z-10 grid grid-cols-12 gap-4 h-[60vh] items-center">
-				{/* Left Column: "Weavy" */}
-				<div className="col-span-12 md:col-span-4 flex items-start h-full pt-10">
-					<h1 className="text-[14vw] md:text-[5vw] leading-[0.8] font-medium tracking-[-0.04em] text-black">Weavy</h1>
+			{/* Typography */}
+			<div className="w-full z-10 mx-10 grid grid-cols-12 gap-8 relative mb-30">
+				<div className="col-span-12 md:col-span-3">
+					<h1 className="text-[12vw] md:text-[5vw] leading-[0.8] font-normal tracking-tight text-black">Weavy</h1>
 				</div>
-				{/* Right Column: "Artistic Intelligence" + Subtext */}
-				<div className="col-span-12 md:col-span-8 flex flex-col justify-start h-full pt-10 pl-0 md:pl-12">
-					<h2 className="text-[9vw] md:text-[5vw] leading-[0.9] font-medium tracking-[-0.04em] text-black mb-8">Artistic Intelligence</h2>
-					<p className="text-lg md:text-[1.4rem] leading-relaxed text-black/70 max-w-[600px] font-medium">
+				<div className="col-span-12 md:col-span-9 flex flex-col pt-2 md:pt-4">
+					<h2 className="text-[9vw] md:text-[5vw] leading-[0.9] font-normal tracking-tight text-black mb-8">Artistic Intelligence</h2>
+					<p className="text-lg md:text-xl leading-relaxed text-black/60 max-w-xl font-medium">
 						Turn your creative vision into scalable workflows. Access all AI models and professional editing tools in one node based platform.
 					</p>
 				</div>
 			</div>
 
-			{/* Decorative Floating Cards (Using Next/Image for optimization if they were real images, sticking to divs for pure UI shapes as per reference) */}
-			<div className="absolute inset-0 w-full h-full pointer-events-none">
-				{/* 3D Model Card */}
-				<div className="absolute bottom-[-10%] left-[5%] w-[18vw] aspect-[4/5] bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.12)] border border-black/5 rotate-[-3deg] overflow-hidden">
-					<div className="p-4 text-[10px] font-mono text-black/50 uppercase tracking-widest">3D - Rodin</div>
-					<div className="relative w-full h-full">
-						<Image
-							src="https://cdn.prod.website-files.com/681b040781d5b5e278a69989/681cd65ba87c69df161752e5_3d_card.avif"
-							alt="3D"
-							fill
-							className="object-cover"
-							sizes="20vw"
-						/>
-					</div>
+			{/* --- INTERACTIVE WORKFLOW CONTAINER --- */}
+			{/* This matches the "small and white color with gradient to cream" request */}
+			<div className="relative w-full h-[80vh] mx-auto max-w-[1800px] rounded-t-[40px] overflow-hidden border-t border-x border-black/5 shadow-[0_-20px_60px_rgba(0,0,0,0.03)]">
+				{/* The Gradient Background */}
+				<div className="absolute inset-0 bg-gradient-to-b from-white via-[#faf9f6] to-[#f0efe9] z-0" />
+
+				{/* The React Flow Instance */}
+				<div className="absolute inset-0 z-10">
+					<HeroWorkflow />
 				</div>
 
-				{/* Stable Diffusion Card */}
-				<div className="absolute bottom-[-5%] left-[30%] w-[22vw] aspect-[4/5] bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.12)] border border-black/5 rotate-[2deg] z-10 overflow-hidden">
-					<div className="p-4 text-[10px] font-mono text-black/50 uppercase tracking-widest">Image - Stable Diffusion</div>
-					<div className="relative w-full h-full">
-						<Image
-							src="https://cdn.prod.website-files.com/681b040781d5b5e278a69989/681cd7cbc22419b32bb9d8d8_hcard%20-%20STABLE%20DIFFUSION.avif"
-							alt="SD"
-							fill
-							className="object-cover"
-							sizes="25vw"
-						/>
-					</div>
-				</div>
-
-				{/* Flux Pro Card */}
-				<div className="absolute bottom-[-15%] right-[10%] w-[20vw] aspect-[4/5] bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.12)] border border-black/5 rotate-[-4deg] overflow-hidden">
-					<div className="p-4 text-[10px] font-mono text-black/50 uppercase tracking-widest">Image - Flux Pro 1.1</div>
-					<div className="relative w-full h-full">
-						<Image
-							src="https://cdn.prod.website-files.com/681b040781d5b5e278a69989/6837510acbe777269734b387_bird_desktop.avif"
-							alt="Flux"
-							fill
-							className="object-cover"
-							sizes="25vw"
-						/>
-					</div>
-				</div>
+				{/* Bottom Fade Overlay (to blend with next section if needed) */}
+				<div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-[#f0efe9] to-transparent z-20 pointer-events-none" />
 			</div>
 		</section>
 	);
