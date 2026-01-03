@@ -27,15 +27,15 @@ export default function Navbar() {
 			<div className="mx-auto h-full flex items-start justify-between">
 				{/* Left: Logo Group */}
 				<div className="flex items-center gap-4">
-					<div className="w-8 h-8 bg-black rounded-[4px] flex items-center justify-center">
-						<div className="w-3.5 h-3.5 border-[2.5px] border-white rounded-[2px]"></div>
+					<div className="w-8 h-8 bg-black rounded-sm flex items-center justify-center">
+						<div className="w-3.5 h-3.5 border-[2.5px] border-white rounded-xs"></div>
 					</div>
 
 					<div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4">
 						<span className="font-bold text-2xl tracking-tight leading-none">Weavy</span>
 
 						{/* The vertical divider line */}
-						<div className="hidden md:block h-5 w-[1px] bg-black/10"></div>
+						<div className="hidden md:block h-5 w-px bg-black/10"></div>
 
 						<span className="text-[10px] md:text-[11px] font-semibold tracking-widest text-black/60 uppercase leading-none mt-0.5">
 							Artistic
@@ -72,7 +72,7 @@ export default function Navbar() {
 							scale: isScrolled ? 0.9 : 1,
 						}}
 						transition={{duration: 0.3}}
-						className="flex items-center mt-1">
+						className="flex items-center">
 						<Link
 							href="/editor"
 							className={`
@@ -81,7 +81,7 @@ export default function Navbar() {
     cursor-pointer select-none
     font-normal text-black rounded-md
     bg-[#f7ff9e] flex items-end justify-start whitespace-nowrap h-full
-    ${isScrolled ? "h-12 py-1 text-lg leading-none" : "h-[89.9px] w-[202px] pt-[10px] pb-[7.92px] pl-[12.76px] pr-[24.36px] text-[40px] leading-[40px]"}
+    ${isScrolled ? "h-12 py-2 text-lg leading-none" : "h-[89.9px] w-50.5 pt-2.5 pb-[7.92px] pl-[12.76px] pr-[24.36px] text-[40px] leading-[40px]"}
   `}
 							style={{
 								boxSizing: "border-box",
