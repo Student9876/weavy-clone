@@ -39,13 +39,13 @@ export default function ToolSection() {
 	];
 
 	return (
-		<section className="py-32 px-6 bg-[#FBFBFB] relative overflow-hidden min-h-[90vh] flex flex-col items-center justify-center">
+		<section className=" with-fade-gradients items-center justify-center">
 			{/* Background Grid */}
 			<div className="absolute inset-0 bg-[linear-gradient(to_right,#e5e5e5_1px,transparent_1px),linear-gradient(to_bottom,#e5e5e5_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
 
 			{/* Fade Gradients */}
-			<div className="absolute top-0 left-0 w-full h-[200px] bg-gradient-to-b from-[#FBFBFB] via-[#FBFBFB]/90 to-transparent pointer-events-none z-10" />
-			<div className="absolute bottom-0 left-0 w-full h-[200px] bg-gradient-to-t from-[#FBFBFB] via-[#FBFBFB]/90 to-transparent pointer-events-none z-10" />
+			{/* <div className="absolute top-0 left-0 w-full h-[200px] bg-gradient-to-b from-[#FBFBFB] via-[#FBFBFB]/90 to-transparent pointer-events-none z-10" />
+			<div className="absolute bottom-0 left-0 w-full h-[200px] bg-gradient-to-t from-[#FBFBFB] via-[#FBFBFB]/90 to-transparent pointer-events-none z-10" /> */}
 
 			{/* Header */}
 			<div className="max-w-[1600px] mx-auto text-center mb-16 relative z-20">

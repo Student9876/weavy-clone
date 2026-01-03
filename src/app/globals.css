@@ -1,19 +1,28 @@
 @import "tailwindcss";
 
-@theme {
-  --color-background: #ffffff;
-  --color-foreground: #09090b;
-  --color-primary: #dfff4f; /* That specific Neon Yellow from screenshot */
-  --color-grid: #e5e5e5;
-}
 
 /* Light Mode Grid Background */
-body {
-  background-color: var(--color-background);
-  color: var(--color-foreground);
-  /* Subtle grid pattern matching the screenshot */
-  background-image: 
-    linear-gradient(to right, var(--color-grid) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--color-grid) 1px, transparent 1px);
-  background-size: 80px 80px;
+
+
+.with-fade-gradients {
+  position: relative;
+  overflow: hidden;
+}
+.with-fade-gradients::before,
+.with-fade-gradients::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 200px;
+  pointer-events: none;
+  z-index: 10;
+}
+.with-fade-gradients::before {
+  top: 0;
+  background: linear-gradient(to bottom, #FBFBFB, rgba(251,251,251,0.9), transparent);
+}
+.with-fade-gradients::after {
+  bottom: 0;
+  background: linear-gradient(to top, #FBFBFB, rgba(251,251,251,0.9), transparent);
 }
