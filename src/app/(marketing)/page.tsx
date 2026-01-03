@@ -4,7 +4,7 @@ import {useRef, useState} from "react";
 import {motion, useScroll, useMotionValueEvent, useTransform} from "framer-motion";
 import Image from "next/image";
 import HeroWorkflow from "@/components/marketing/HeroWorkflow";
-import ToolSection from "@/components/ToolSection";
+import ToolSection from "@/components/marketing/ToolSection";
 
 // --- DATA ---
 const aiModels = [
