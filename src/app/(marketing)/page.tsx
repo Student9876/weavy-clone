@@ -25,7 +25,7 @@ const aiModels = [
 
 export default function LandingPage() {
 	return (
-		<div className="flex flex-col font-sans">
+		<div className=" font-sans">
 			<HeroSection />
 			<StickyModelSection />
 			<ToolSection />
