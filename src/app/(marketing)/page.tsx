@@ -5,6 +5,7 @@ import {motion, useScroll, useMotionValueEvent, useTransform} from "framer-motio
 import Image from "next/image";
 import HeroSection from "@/components/marketing/HeroSection";
 import ToolSection from "@/components/marketing/ToolSection";
+import EditorSection from "@/components/marketing/EditorSection";
 import Footer from "@/components/marketing/Footer";
 
 // --- DATA ---
@@ -29,6 +30,8 @@ export default function LandingPage() {
 			<HeroSection />
 			<StickyModelSection />
 			<ToolSection />
+
+			<EditorSection />
 			<Footer />
 		</div>
 	);
