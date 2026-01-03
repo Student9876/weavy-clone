@@ -58,9 +58,9 @@ export default function ToolSection() {
 			{/* Interactive Tool Area */}
 			<div className="relative w-full max-w-[1600px] h-[700px] z-20">
 				{/* Central Image Container - Static */}
-				<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] h-[400px] md:w-[500px] md:h-[620px] z-10 rounded-[32px] overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.12)] border border-black/5 bg-white ring-1 ring-black/5">
-					<Image src={tools[activeTool].image} alt={tools[activeTool].name} fill className="object-cover" priority />
-				</div>
+				{/* <div className=""> */}
+				<Image src={tools[activeTool].image} alt={tools[activeTool].name} fill className="object-cover" priority />
+				{/* </div> */}
 
 				{/* Render Helper for Buttons */}
 				{[...leftTools, ...rightTools].map((pos) => (
