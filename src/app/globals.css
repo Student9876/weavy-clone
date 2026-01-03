@@ -4,7 +4,7 @@
 /* Light Mode Grid Background */
 
 
-.with-fade-gradients {
+/* .with-fade-gradients {
   position: relative;
   overflow: hidden;
 }
@@ -25,4 +25,4 @@
 .with-fade-gradients::after {
   bottom: 0;
   background: linear-gradient(to top, #FBFBFB, rgba(251,251,251,0.9), transparent);
-}
+} */
