@@ -4,6 +4,7 @@ import {useRef, useState} from "react";
 import {motion, useScroll, useMotionValueEvent, useTransform} from "framer-motion";
 import Image from "next/image";
 import HeroWorkflow from "@/components/marketing/HeroWorkflow";
+import ToolSection from "@/components/ToolSection";
 
 // --- DATA ---
 const aiModels = [
@@ -21,21 +22,12 @@ const aiModels = [
 	{name: "Veo 3", type: "video", src: "https://assets.weavy.ai/homepage/mobile-videos/veo2.mp4"},
 ];
 
-const tools = [
-	{name: "Crop", top: "20%", left: "15%"},
-	{name: "Inpaint", top: "35%", left: "25%"},
-	{name: "Upscale", top: "60%", left: "20%"},
-	{name: "Outpaint", top: "25%", left: "65%"},
-	{name: "Mask Extractor", top: "50%", left: "70%"},
-	{name: "Relight", top: "70%", left: "60%"},
-];
-
 export default function LandingPage() {
 	return (
 		<div className="flex flex-col font-sans">
 			<HeroSection />
 			<StickyModelSection />
-			<ToolsSection />
+			<ToolSection />
 
 			{/* Footer Placeholder */}
 			<div className="py-8 bg-black text-white/40 text-center text-sm border-t border-white/10">© 2025 Weavy Clone. For educational purposes.</div>
@@ -157,53 +149,6 @@ function StickyModelSection() {
 						</motion.div>
 					</div>
 				</div>
-			</div>
-		</section>
-	);
-}
-
-// --- 3. TOOLS SECTION ---
-function ToolsSection() {
-	return (
-		<section className="py-40 px-6 bg-[#FBFBFB] relative z-20">
-			<div className="max-w-[1600px] mx-auto text-center mb-32">
-				<h2 className="text-[7vw] md:text-[6vw] font-medium tracking-[-0.03em] text-black leading-[1] mb-8">
-					With all the professional <br /> tools you rely on
-				</h2>
-				<p className="text-black/50 text-xl md:text-2xl font-medium tracking-wide">In one seamless workflow</p>
-			</div>
-
-			<div className="max-w-[1200px] mx-auto relative h-[800px] rounded-[40px] bg-white border border-black/5 overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)]">
-				{/* Grid Background */}
-				<div className="absolute inset-0 bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:50px_50px]" />
-
-				{/* Central Image */}
-				<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-zinc-100 rounded-3xl shadow-[0_40px_80px_rgba(0,0,0,0.1)] z-10 overflow-hidden border border-black/5">
-					<Image
-						src="https://cdn.prod.website-files.com/681b040781d5b5e278a69989/68224563d93b3ce65b54f07b_Invert%402x.avif"
-						alt="Main Tool"
-						fill
-						className="object-cover"
-						sizes="400px"
-						priority
-					/>
-				</div>
-
-				{/* Floating Tool Pills */}
-				{tools.map((tool, i) => (
-					<motion.div
-						key={i}
-						initial={{opacity: 0, scale: 0.9}}
-						whileInView={{opacity: 1, scale: 1}}
-						viewport={{once: true}}
-						transition={{delay: i * 0.1}}
-						className="absolute bg-white/80 backdrop-blur-md px-6 py-3 rounded-full shadow-[0_8px_20px_rgba(0,0,0,0.06)] border border-white/50 flex items-center gap-3 text-[16px] font-semibold text-black/80 z-20 whitespace-nowrap cursor-default hover:scale-105 transition-transform"
-						style={{top: tool.top, left: tool.left}}>
-						{/* Simple Circle Icon Placeholder */}
-						<div className="w-2 h-2 bg-black rounded-full opacity-20"></div>
-						{tool.name}
-					</motion.div>
-				))}
 			</div>
 		</section>
 	);
