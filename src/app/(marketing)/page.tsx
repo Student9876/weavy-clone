@@ -42,6 +42,8 @@ export default function LandingPage() {
 		</div>
 	);
 }
+
+// --- 1. HERO SECTION ---
 function HeroSection() {
 	return (
 		<section className="relative min-h-[120vh] flex flex-col pt-32 px-6 overflow-hidden bg-[#FBFBFB]">
@@ -79,9 +81,6 @@ function HeroSection() {
 }
 
 // --- 2. STICKY MODELS SECTION ---
-// ... imports remain same
-
-// --- 2. STICKY MODELS SECTION (Fixed: Clean Scroll, No Fade Mask) ---
 function StickyModelSection() {
 	const targetRef = useRef<HTMLDivElement>(null);
 	const [activeIndex, setActiveIndex] = useState(0);
@@ -125,7 +124,7 @@ function StickyModelSection() {
 				</div>
 
 				{/* Content Grid */}
-				<div className="relative z-20 max-w-[1600px] w-full px-6 grid grid-cols-1 md:grid-cols-12 gap-8 items-center h-full">
+				<div className="relative z-20 max-w-400 w-full px-6 grid grid-cols-1 md:grid-cols-12 gap-8 items-center h-full">
 					{/* Left: Headline */}
 					<div className="md:col-span-7 flex flex-col justify-center">
 						<h2 className="text-[7vw] md:text-[6vw] font-medium leading-[0.95] tracking-tight mb-8 drop-shadow-lg">
@@ -146,17 +145,13 @@ function StickyModelSection() {
 							{aiModels.map((model, idx) => {
 								const isActive = activeIndex === idx;
 								return (
-									<motion.div
+									<div
 										key={idx}
-										animate={{
-											// Active: Bright & White. Inactive: Transparent White
-											opacity: isActive ? 1 : 0.5,
-											color: isActive ? "#dfff4f" : "#ffffff",
-										}}
-										transition={{duration: 0.3}}
-										className="text-[4vw] md:text-[3.5vw] font-medium tracking-tight leading-[1.1] cursor-pointer transition-colors">
+										className={`text-[4vw] md:text-[3.5vw] font-medium tracking-tight leading-[1.1] cursor-pointer transition-colors ${
+											isActive ? "text-[#dfff4f]" : "text-white"
+										}`}>
 										{model.name}
-									</motion.div>
+									</div>
 								);
 							})}
 						</motion.div>
@@ -166,6 +161,7 @@ function StickyModelSection() {
 		</section>
 	);
 }
+
 // --- 3. TOOLS SECTION ---
 function ToolsSection() {
 	return (
