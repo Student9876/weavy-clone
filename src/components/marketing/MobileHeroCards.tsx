@@ -40,11 +40,7 @@ export default function MobileHeroCards() {
 	return (
 		<div className="relative px-4 pb-8">
 			{/* Background container with gradient */}
-			<div
-				className="relative rounded-tl-[30px] overflow-hidden pt-6 pb-8"
-				style={{
-					background: "linear-gradient(135deg, hsl(45 30% 92%) 0%, hsl(40 25% 90%) 50%, hsl(35 20% 88%) 100%)",
-				}}>
+			<div className="relative rounded-tl-[30px] overflow-hidden pt-6 pb-8 bg-gradient-to-b from-[#DDE1E3] to-[#F6F7F8]">
 				{/* Radial gradient overlay */}
 				<div
 					className="absolute inset-0 pointer-events-none"
@@ -96,18 +92,6 @@ export default function MobileHeroCards() {
 						</div>
 					</div>
 				</div>
-			</div>
-
-			{/* Curved bottom */}
-			<div className="relative h-10 -mb-4" style={{marginTop: "-1px"}}>
-				<div
-					className="absolute inset-x-0 top-0 h-full"
-					style={{
-						background: "linear-gradient(135deg, hsl(45 30% 92%) 0%, hsl(40 25% 90%) 50%, hsl(35 20% 88%) 100%)",
-						borderBottomLeftRadius: "50% 100%",
-						borderBottomRightRadius: "50% 100%",
-					}}
-				/>
 			</div>
 		</div>
 	);

@@ -58,7 +58,17 @@ const CustomEdge = ({id, sourceX, sourceY, targetX, targetY}: EdgeProps) => {
 		targetY,
 		curvature: 0.4,
 	});
-	return <BaseEdge id={id} path={edgePath} style={{stroke: "hsl(var(--foreground) / 0.15)", strokeWidth: 1.5}} />;
+	return (
+		<BaseEdge
+			id={id}
+			path={edgePath}
+			style={{
+				stroke: "#fff", // Use a solid, visible color
+				strokeWidth: 1.5, // Make the edge thicker
+				opacity: 1, // Increase opacity for visibility
+			}}
+		/>
+	);
 };
 
 const nodeTypes = {marketingCard: MarketingCardNode};
@@ -170,12 +180,13 @@ export default function HeroWorkflow() {
 				edgeTypes={edgeTypes}
 				fitView
 				fitViewOptions={{padding: 0.1}}
-				panOnDrag={true}
+				panOnDrag={false}         // Prevent canvas dragging
+				panOnScroll={false}       // Prevent canvas dragging with scroll
 				zoomOnScroll={false}
 				zoomOnPinch={false}
 				zoomOnDoubleClick={false}
 				preventScrolling={false}
-				nodesDraggable={true}
+				nodesDraggable={true}     // Allow nodes to be dragged
 				nodesConnectable={false}
 				elementsSelectable={true}
 				proOptions={{hideAttribution: true}}
