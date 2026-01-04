@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from 'zustand/middleware';
 import {
     addEdge,
     applyNodeChanges,
@@ -23,10 +24,11 @@ type WorkflowState = {
     onEdgesChange: OnEdgesChange;
     onConnect: OnConnect;
     updateNodeData: (id: string, data: Partial<AppNode['data']>) => void;
+    resetWorkflow: () => void;
 };
 
 // Initial Data
-const initialNodes: AppNode[] = [
+const initialNodesData: AppNode[] = [
     {
         id: "1",
         type: "textNode",
@@ -38,43 +40,65 @@ const initialNodes: AppNode[] = [
             isLocked: false,
         },
     },
+    {
+        id: "2",
+        type: "imageNode",
+        position: { x: 100, y: 350 },
+        data: {
+            label: "Product Image",
+            status: 'idle',
+            inputType: 'upload', // Required by ImageNodeData
+        },
+    },
 ];
 
 
-export const useWorkflowStore = create<WorkflowState>((set, get) => ({
-    nodes: initialNodes,
-    edges: [],
-    // Standard React Flow Handlers
-    onNodesChange: (changes: NodeChange[]) => {
-        set({
-            nodes: applyNodeChanges(changes, get().nodes) as AppNode[],
-        });
-    },
+export const useWorkflowStore = create<WorkflowState>()(
+    persist(
+        (set, get) => ({
+            nodes: initialNodesData,
+            edges: [],
 
-    onEdgesChange: (changes: EdgeChange[]) => {
-        set({
-            edges: applyEdgeChanges(changes, get().edges),
-        });
-    },
+            onNodesChange: (changes: NodeChange[]) => {
+                set({
+                    nodes: applyNodeChanges(changes, get().nodes) as AppNode[],
+                });
+            },
 
-    onConnect: (connection: Connection) => {
-        set({
-            edges: addEdge(connection, get().edges),
-        });
-    },
-    updateNodeData: (id: string, newData: Partial<AppNode['data']>) => {
-        set({
-            nodes: get().nodes.map((node) => {
-                if (node.id === id) {
-                    return {
-                        ...node,
-                        data: { ...node.data, ...newData },
-                    };
-                }
-                return node;
-            }),
-        });
-    },
+            onEdgesChange: (changes: EdgeChange[]) => {
+                set({
+                    edges: applyEdgeChanges(changes, get().edges),
+                });
+            },
 
-}));
+            onConnect: (connection: Connection) => {
+                set({
+                    edges: addEdge(connection, get().edges),
+                });
+            },
+
+            updateNodeData: (id: string, newData: Partial<AppNode['data']>) => {
+                set({
+                    nodes: get().nodes.map((node) => {
+                        if (node.id === id) {
+                            return {
+                                ...node,
+                                data: { ...node.data, ...newData },
+                            };
+                        }
+                        return node;
+                    }),
+                });
+            },
+
+            resetWorkflow: () => {
+                set({ nodes: initialNodesData, edges: [] });
+            },
+        }),
+        {
+            name: 'workflow-storage', // unique name in localStorage
+            storage: createJSONStorage(() => localStorage), // use browser local storage
+        }
+    )
+);
 

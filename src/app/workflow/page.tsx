@@ -1,20 +1,32 @@
 "use client";
 
-import React from "react";
+import React, {useSyncExternalStore} from "react";
 import {ReactFlow, Background, Controls, MiniMap} from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import Sidebar from "@/components/workflow/Sidebar";
 import TextNode from "@/components/workflow/nodes/TextNode";
+import ImageNode from "@/components/workflow/nodes/ImageNode"; // Don't forget this!
 import {useWorkflowStore} from "@/store/workflowStore";
 
 const nodeTypes = {
 	textNode: TextNode,
+	imageNode: ImageNode,
 };
 
 export default function EditorPage() {
-	// 1. Consume state from the store
 	const {nodes, edges, onNodesChange, onEdgesChange, onConnect} = useWorkflowStore();
+
+	// HYDRATION FIX: Only render React Flow after mounting on client
+	const isMounted = useSyncExternalStore(
+		() => () => {},
+		() => true,
+		() => false
+	);
+
+	if (!isMounted) {
+		return <div className="flex h-screen w-screen bg-[#0a0a0a] items-center justify-center text-white/20">Loading Workflow...</div>;
+	}
 
 	return (
 		<div className="flex h-screen w-screen bg-[#0a0a0a] text-white overflow-hidden font-sans">
