@@ -74,7 +74,7 @@ export default function Navbar() {
 						transition={{duration: 0.3}}
 						className="flex items-center">
 						<Link
-							href="/editor"
+							href="/workflow"
 							className={`
     transition-all duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]
     hover:bg-[#ccff00] active:scale-95

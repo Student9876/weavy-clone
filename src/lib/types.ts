@@ -74,6 +74,11 @@ export interface LLMNodeData extends BaseNodeData {
     viewMode: 'single' | 'list';
 }
 
+
+// 1. Define the Full Node Types (This fixes the NodeProps error)
+export type TextNodeType = Node<TextNodeData, 'textNode'>;
+export type ImageNodeType = Node<ImageNodeData, 'imageNode'>;
+export type LLMNodeType = Node<LLMNodeData, 'llmNode'>;
 // Union type for the Editor
 export type AppNodeData = TextNodeData | ImageNodeData | LLMNodeData;
 export type AppNode = Node<AppNodeData>;
