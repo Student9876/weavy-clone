@@ -18,7 +18,6 @@ const aiModels = [
 	{name: "Veo 3", type: "video", src: "https://assets.weavy.ai/homepage/mobile-videos/veo2.mp4"},
 ];
 
-
 export default function StickyModelSection() {
 	const targetRef = useRef<HTMLDivElement>(null);
 	const [activeIndex, setActiveIndex] = useState(0);
@@ -62,30 +61,27 @@ export default function StickyModelSection() {
 				</div>
 
 				{/* Content Grid */}
-				<div className="relative z-20 max-w-400 w-full px-6 grid grid-cols-1 md:grid-cols-12 gap-8 items-center h-full">
-					{/* Left: Headline */}
-					<div className="md:col-span-7 flex flex-col justify-center">
-						<h2 className="text-[7vw] md:text-[6vw] font-medium leading-[0.95] tracking-tight mb-8 drop-shadow-lg">
-							Use all <br />
-							<span className="text-white/50">AI models,</span> <br />
-							together <br />
-							at last
+				<div className="relative z-20 w-full h-full px-2 sm:px-6 flex flex-col md:grid md:grid-cols-12 gap-y-6 md:gap-8 items-center h-full">
+					{/* Headline and description */}
+					<div className="w-full md:col-span-7 flex flex-col justify-center md:px-10">
+						<h2 className="text-[14vw] font-normal md:text-[6vw] md:font-medium leading-[1.05] tracking-tight mt-12 mb-10 md:mb-8 drop-shadow-lg">
+							Use all AI models, together at last
 						</h2>
-						<p className="text-xl md:text-2xl text-white/80 max-w-lg leading-relaxed font-medium drop-shadow-md">
-							AI models and professional editing tools in one node-based platform.
+						<p className="text-base md:text-2xl text-white/80 max-w-lg leading-relaxed font-medium drop-shadow-md">
+							AI models and professional editing tools in one node-based platform. Turn creative vision into scalable workflows without
+							compromising quality.
 						</p>
 					</div>
 
-					{/* Right: Scrolling List Window */}
-					<div className="md:col-span-5 h-full overflow-hidden flex items-start relative pl-10">
-						{/* The Moving List Container */}
-						<motion.div style={{y}} className="flex flex-col gap-4 w-full pt-[20vh]">
+					{/* Scrollable list */}
+					<div className="w-full md:col-span-5 h-full overflow-hidden flex items-center md:items-start justify-center md:justify-start relative pl-0 md:pl-10">
+						<motion.div style={{y}} className="flex flex-col items-start text-left gap-2 md:gap-4 w-full pt-2 md:pt-[20vh]">
 							{aiModels.map((model, idx) => {
 								const isActive = activeIndex === idx;
 								return (
 									<div
 										key={idx}
-										className={`text-[4vw] md:text-[3.5vw] font-medium tracking-tight leading-[1.1] cursor-pointer transition-colors ${
+										className={`text-[30px] md:text-[3.5vw] font-medium tracking-tight leading-[1.1] cursor-pointer transition-colors ${
 											isActive ? "text-[#dfff4f]" : "text-white"
 										}`}>
 										{model.name}
