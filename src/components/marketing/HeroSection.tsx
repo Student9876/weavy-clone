@@ -1,36 +1,88 @@
 import HeroWorkflow from "@/components/marketing/HeroWorkflow";
+import MobileHeroCards from "@/components/marketing/MobileHeroCards";
+
 export default function HeroSection() {
 	return (
-		<section className="relative min-h-[120vh] flex flex-col pt-32 px-6 overflow-hidden">
-			{/* Background Grid */}
-			{/* <div className="absolute inset-0 bg-[linear-gradient(to_right,#e5e5e5_1px,transparent_1px),linear-gradient(to_bottom,#e5e5e5_1px,transparent_1px)] bg-size-[16px_16px] pointer-events-none opacity-60" /> */}
+		<section className="relative w-full bg-background">
+			{/* Background Grid Pattern */}
+			<div
+				className="absolute inset-0"
+				style={{
+					backgroundSize: "48px 48px",
+					backgroundImage: `
+            linear-gradient(to right, hsl(0 0% 90%) 1px, transparent 1px),
+            linear-gradient(to bottom, hsl(0 0% 90%) 1px, transparent 1px)
+          `,
+				}}
+				aria-hidden="true"
+			/>
 
-			{/* Typography */}
-			<div className="w-full z-10 mx-10 grid grid-cols-12 gap-8 relative mb-30">
-				<div className="col-span-12 md:col-span-3">
-					<h1 className="text-[12vw] md:text-[5vw] leading-[0.8] font-normal tracking-tight text-black">Weavy</h1>
-				</div>
-				<div className="col-span-12 md:col-span-9 flex flex-col pt-2 md:pt-4">
-					<h2 className="text-[9vw] md:text-[5vw] leading-[0.9] font-normal tracking-tight text-black mb-8">Artistic Intelligence</h2>
-					<p className="text-lg md:text-xl leading-relaxed text-black/60 max-w-xl font-medium">
-						Turn your creative vision into scalable workflows. Access all AI models and professional editing tools in one node based platform.
-					</p>
+			{/* Top gradient fade */}
+			<div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-background to-transparent z-[1]" aria-hidden="true" />
+
+			{/* Content Container */}
+			<div className="relative z-10 pt-20 md:pt-32 px-4 md:px-12 lg:px-20">
+				{/* Typography Section - Mobile: stacked, Desktop: side by side */}
+				<div className="max-w-[1400px] mx-auto mb-6 md:mb-8">
+					<div className="flex flex-col md:flex-row md:items-start md:gap-16 lg:gap-24">
+						{/* Left: Brand Name */}
+						<div className="shrink-0">
+							<h1 className="text-[clamp(3rem,15vw,8rem)] font-normal leading-[0.9] tracking-tight text-foreground">Weavy</h1>
+						</div>
+
+						{/* Right: Tagline + Description */}
+						<div className="mt-6 md:mt-2">
+							<h2 className="text-[clamp(2.5rem,10vw,5rem)] font-normal leading-[1] tracking-tight text-foreground mb-4 text-center md:text-left">
+								Artistic
+								<br className="md:hidden" /> Intelligence
+							</h2>
+							<p className="text-sm md:text-base leading-relaxed max-w-md text-muted-foreground">
+								Turn your creative vision into scalable workflows. Access all AI models and professional editing tools in one node based
+								platform.
+							</p>
+						</div>
+					</div>
 				</div>
 			</div>
 
 			{/* --- INTERACTIVE WORKFLOW CONTAINER --- */}
-			<div className="relative w-full h-[80vh] mx-auto max-w-450 rounded-t-[40px] overflow-hidden border-t border-x border-black/5 shadow-[0_-20px_60px_rgba(0,0,0,0.03)]">
-				{/* The Gradient Background */}
-				{/* <div className="absolute inset-0 bg-linear-to-b from-white via-[#faf9f6] to-[#f0efe9] z-0" /> */}
+			<div className="relative w-full overflow-visible">
+				{/* Desktop: ReactFlow canvas */}
+				<div className="hidden md:block">
+					<div
+						className="relative mx-4 md:mx-8 lg:mx-12 rounded-tl-[40px] md:rounded-tl-[60px] lg:rounded-tl-[80px] overflow-hidden"
+						style={{
+							background: "linear-gradient(135deg, hsl(45 30% 92%) 0%, hsl(40 25% 90%) 50%, hsl(35 20% 88%) 100%)",
+						}}>
+						<div
+							className="absolute inset-0 pointer-events-none"
+							style={{
+								background: "radial-gradient(ellipse at top left, hsla(0, 0%, 100%, 0.4) 0%, transparent 60%)",
+							}}
+							aria-hidden="true"
+						/>
+						<div className="relative h-[550px] lg:h-[650px] w-full">
+							<HeroWorkflow />
+						</div>
+					</div>
 
-				{/* The React Flow Instance */}
-				<div className="absolute inset-0 z-10">
-					<HeroWorkflow />
+					{/* Curved bottom - Desktop */}
+					<div className="relative h-16 md:h-24 -mb-8 md:-mb-12" style={{marginTop: "-1px"}}>
+						<div
+							className="absolute inset-x-0 top-0 h-full mx-4 md:mx-8 lg:mx-12"
+							style={{
+								background: "linear-gradient(135deg, hsl(45 30% 92%) 0%, hsl(40 25% 90%) 50%, hsl(35 20% 88%) 100%)",
+								borderBottomLeftRadius: "50% 100%",
+								borderBottomRightRadius: "50% 100%",
+							}}
+						/>
+					</div>
 				</div>
 
-				{/* Bottom Fade Overlay (to blend with next section if needed)
-				 */}
-				{/* <div className="absolute bottom-0 left-0 w-full h-32 bg-linear-to-t from-[#f0efe9] to-transparent z-20 pointer-events-none" /> */}
+				{/* Mobile: Vertical card layout */}
+				<div className="md:hidden">
+					<MobileHeroCards />
+				</div>
 			</div>
 		</section>
 	);

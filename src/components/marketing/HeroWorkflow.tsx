@@ -1,57 +1,64 @@
-"use client";
-
-import {ReactFlow, useNodesState, useEdgesState, Background, Handle, Position, NodeProps, BaseEdge, EdgeProps, getBezierPath} from "@xyflow/react";
-import type {HeroNode} from "@/lib/types";
+import {ReactFlow, useNodesState, useEdgesState, Handle, Position, BaseEdge, EdgeProps, getBezierPath, Node} from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import Image from "next/image";
 
-// --- 1. CUSTOM NODE (Polymorphic Sizing) ---
-const MarketingCardNode = ({data}: NodeProps<HeroNode>) => {
-	// Now TypeScript knows 'data' has width, height, label, etc.
+interface HeroNodeData extends Record<string, unknown> {
+	type?: string;
+	label?: string;
+	image?: string;
+	text?: string;
+	gradientClass?: string;
+	width?: string;
+	height?: string;
+}
+
+type HeroNode = Node<HeroNodeData>;
+
+// --- 1. CUSTOM NODE ---
+const MarketingCardNode = ({data}: {data: HeroNodeData}) => {
 	const width = data.width || "w-64";
 	const height = data.height || "aspect-[4/5]";
 
 	return (
-		<div
-			className={`relative group bg-white rounded-3xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] border border-black/5 p-1.5 transition-shadow hover:shadow-2xl ${width}`}>
-			{/* Safe Conditional Rendering */}
+		<div className={`${width} flex flex-col gap-2`}>
+			{/* Label */}
 			{data.label && (
-				<div className="px-4 py-3 flex justify-between items-center text-[10px] font-mono text-black/40 uppercase tracking-widest">
+				<div className="flex items-center gap-3 text-[10px] font-medium tracking-[0.15em] uppercase text-foreground/70">
 					<span>{data.type}</span>
-					<span className="text-black/80 font-bold">{data.label}</span>
+					<span className="text-foreground">{data.label}</span>
 				</div>
 			)}
+			{data.type && !data.label && <div className="text-[10px] font-medium tracking-[0.15em] uppercase text-foreground/70">{data.type}</div>}
 
 			{/* Node Content */}
-			<div className={`relative w-full ${height} bg-zinc-50 rounded-2xl overflow-hidden`}>
+			<div className={`${height} w-full rounded-lg overflow-hidden bg-muted/50 relative`}>
 				{data.image ? (
-					<Image src={data.image} alt="node content" fill className="object-cover pointer-events-none" />
+					<img src={data.image} alt={data.label || "workflow node"} className="w-full h-full object-cover" />
 				) : data.text ? (
-					<div className="p-6 flex items-center justify-center h-full text-center bg-white">
-						<p className="text-[11px] leading-relaxed font-medium text-black/60">{data.text}</p>
+					<div className="p-4 h-full flex items-start bg-card border border-border rounded-lg">
+						<p className="text-[11px] leading-relaxed text-foreground/80">{data.text}</p>
 					</div>
 				) : (
-					/* For Color Reference Gradient */
-					<div className={`w-full h-full ${data.gradientClass}`} />
+					<div className={`w-full h-full ${data.gradientClass || "bg-gradient-to-r from-blue-900 via-purple-800 to-orange-300"}`} />
 				)}
 			</div>
 
-			{/* Connection Handles (Fixed Tailwind syntax w-3!) */}
-			<Handle type="target" position={Position.Left} className="w-3! h-3! bg-white! border-[1.5px]! border-black/10! shadow-sm" style={{left: "-6px"}} />
-			<Handle
-				type="source"
-				position={Position.Right}
-				className="w-3! h-3! bg-white! border-[1.5px]! border-black/10! shadow-sm"
-				style={{right: "-6px"}}
-			/>
+			{/* Connection Handles */}
+			<Handle type="target" position={Position.Left} className="!w-2 !h-2 !bg-foreground/30 !border-0" />
+			<Handle type="source" position={Position.Right} className="!w-2 !h-2 !bg-foreground/30 !border-0" />
 		</div>
 	);
 };
 
 // --- 2. CUSTOM EDGE ---
 const CustomEdge = ({id, sourceX, sourceY, targetX, targetY}: EdgeProps) => {
-	const [edgePath] = getBezierPath({sourceX, sourceY, targetX, targetY});
-	return <BaseEdge id={id} path={edgePath} style={{stroke: "#d4d4d8", strokeWidth: 1.5}} />;
+	const [edgePath] = getBezierPath({
+		sourceX,
+		sourceY,
+		targetX,
+		targetY,
+		curvature: 0.4,
+	});
+	return <BaseEdge id={id} path={edgePath} style={{stroke: "hsl(var(--foreground) / 0.15)", strokeWidth: 1.5}} />;
 };
 
 const nodeTypes = {marketingCard: MarketingCardNode};
@@ -63,25 +70,25 @@ const initialNodes: HeroNode[] = [
 	{
 		id: "1",
 		type: "marketingCard",
-		position: {x: 50, y: 150},
+		position: {x: 50, y: 80},
 		data: {
 			type: "3D",
 			label: "Rodin 2.0",
 			image: "https://cdn.prod.website-files.com/681b040781d5b5e278a69989/681cd65ba87c69df161752e5_3d_card.avif",
-			width: "w-[220px]",
+			width: "w-[180px]",
 			height: "aspect-square",
 		},
 	},
 	{
 		id: "2",
 		type: "marketingCard",
-		position: {x: 50, y: 650},
+		position: {x: 50, y: 380},
 		data: {
 			type: "Color Reference",
 			label: "",
 			gradientClass: "bg-gradient-to-r from-blue-900 via-purple-800 to-orange-300",
-			width: "w-[260px]",
-			height: "h-[120px]",
+			width: "w-[220px]",
+			height: "h-[100px]",
 		},
 	},
 
@@ -89,12 +96,12 @@ const initialNodes: HeroNode[] = [
 	{
 		id: "3",
 		type: "marketingCard",
-		position: {x: 450, y: 300},
+		position: {x: 380, y: 120},
 		data: {
 			type: "Image",
 			label: "Stable Diffusion",
 			image: "https://cdn.prod.website-files.com/681b040781d5b5e278a69989/681cd7cbc22419b32bb9d8d8_hcard%20-%20STABLE%20DIFFUSION.avif",
-			width: "w-[340px]",
+			width: "w-[280px]",
 			height: "aspect-[3/4]",
 		},
 	},
@@ -103,25 +110,25 @@ const initialNodes: HeroNode[] = [
 	{
 		id: "4",
 		type: "marketingCard",
-		position: {x: 900, y: 400},
+		position: {x: 780, y: 120},
 		data: {
 			type: "Text",
 			label: "",
-			text: "a Great-Tailed Grackle bird is flying from the background and seating on the model's shoulder slowly and barely moves...",
-			width: "w-[240px]",
+			text: "a Great-Tailed Grackle bird is flying from the background and seating on the model's shoulder slowly and barely moves, the model looks at the camera, then bird flies away. cinematic.",
+			width: "w-[180px]",
 			height: "h-auto",
 		},
 	},
 	{
 		id: "5",
 		type: "marketingCard",
-		position: {x: 900, y: 650},
+		position: {x: 780, y: 280},
 		data: {
 			type: "Image",
 			label: "Flux Pro 1.1",
 			image: "https://cdn.prod.website-files.com/681b040781d5b5e278a69989/6837510acbe777269734b387_bird_desktop.avif",
-			width: "w-[240px]",
-			height: "aspect-[3/4]",
+			width: "w-[180px]",
+			height: "aspect-square",
 		},
 	},
 
@@ -129,12 +136,12 @@ const initialNodes: HeroNode[] = [
 	{
 		id: "6",
 		type: "marketingCard",
-		position: {x: 1300, y: 250},
+		position: {x: 1080, y: 80},
 		data: {
 			type: "Video",
 			label: "Minimax Video",
 			image: "https://cdn.prod.website-files.com/681b040781d5b5e278a69989/6825887e82ac8a8bb8139ebd_GPT%20img%201.avif",
-			width: "w-[360px]",
+			width: "w-[300px]",
 			height: "aspect-[3/4]",
 		},
 	},
@@ -161,19 +168,18 @@ export default function HeroWorkflow() {
 				onEdgesChange={onEdgesChange}
 				nodeTypes={nodeTypes}
 				edgeTypes={edgeTypes}
-				proOptions={{hideAttribution: true}}
-				panOnScroll={false}
+				fitView
+				fitViewOptions={{padding: 0.1}}
+				panOnDrag={true}
 				zoomOnScroll={false}
 				zoomOnPinch={false}
-				panOnDrag={false}
+				zoomOnDoubleClick={false}
 				preventScrolling={false}
 				nodesDraggable={true}
-				fitView
-				fitViewOptions={{padding: 0.2}}
-				minZoom={0.5}
-				maxZoom={1}>
-				<Background color="#000" gap={40} size={1} className="opacity-[0.02]" />
-			</ReactFlow>
+				nodesConnectable={false}
+				elementsSelectable={true}
+				proOptions={{hideAttribution: true}}
+			/>
 		</div>
 	);
 }
