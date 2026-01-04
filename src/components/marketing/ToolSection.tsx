@@ -1,12 +1,11 @@
 "use client";
 
-import {useState} from "react";
+import {useState, useEffect} from "react";
 import {motion} from "framer-motion";
 import Image from "next/image";
-// import EditorSection from "./EditorSection";
 
 export default function ToolSection() {
-	const [activeTool, setActiveTool] = useState(0);
+	const [activeTool, setActiveTool] = useState(1); // Default to Inpaint
 
 	const tools = [
 		{name: "Crop", image: "https://cdn.prod.website-files.com/681b040781d5b5e278a69989/68224563af147b5d7c2496ff_Crop%402x.avif"},
@@ -19,92 +18,154 @@ export default function ToolSection() {
 		{name: "Image Describer", image: "https://cdn.prod.website-files.com/681b040781d5b5e278a69989/6825ab42a8f361a9518d5a7f_Image%20describer%402x.avif"},
 		{name: "Channels", image: "https://cdn.prod.website-files.com/681b040781d5b5e278a69989/682245646909d06ed8a17f4d_Channels%402x.avif"},
 		{name: "Painter", image: "https://cdn.prod.website-files.com/681b040781d5b5e278a69989/68224563d93b3ce65b54f07b_Invert%402x.avif"},
+		{name: "Z Depth Extractor", image: "https://cdn.prod.website-files.com/681b040781d5b5e278a69989/68224563290cc77eba8f086a_z%20depth%402x.avif"},
 	];
 
-	type ToolPosition = {index: number; top: string; right: string; left?: undefined} | {index: number; top: string; left: string; right?: undefined};
-
-	// Note: Increased the 'px' values in calc() to push buttons further out for the larger image
-	const leftTools: ToolPosition[] = [
-		{index: 0, top: "12%", right: "calc(50% + 340px)"}, // Crop
-		{index: 1, top: "35%", right: "calc(50% + 380px)"}, // Inpaint
-		{index: 2, top: "58%", right: "calc(50% + 340px)"}, // Upscale
-		{index: 3, top: "25%", right: "calc(50% + 280px)"}, // Outpaint
-		{index: 4, top: "70%", right: "calc(50% + 280px)"}, // Mask Extractor
+	const leftButtons = [
+		{index: 0, name: "Crop", top: "15%"},
+		{index: 6, name: "Invert", top: "30%"},
+		{index: 3, name: "Outpaint", top: "45%"},
+		{index: 1, name: "Inpaint", top: "60%"},
+		{index: 4, name: "Mask Extractor", top: "75%"},
+		{index: 2, name: "Upscale", top: "90%"},
 	];
 
-	const rightTools: ToolPosition[] = [
-		{index: 5, top: "12%", left: "calc(50% + 340px)"}, // Relight
-		{index: 6, top: "30%", left: "calc(50% + 280px)"}, // Invert
-		{index: 7, top: "45%", left: "calc(50% + 380px)"}, // Image Describer
-		{index: 8, top: "65%", left: "calc(50% + 320px)"}, // Channels
-		{index: 9, top: "80%", left: "calc(50% + 240px)"}, // Painter
+	const rightButtons = [
+		{index: 9, name: "Painter", top: "15%"},
+		{index: 8, name: "Channels", top: "35%"},
+		{index: 7, name: "Image Describer", top: "55%"},
+		{index: 5, name: "Relight", top: "75%"},
+		{index: 10, name: "Z Depth Extractor", top: "90%"},
 	];
+
+	// Auto-cycle through tools
+	useEffect(() => {
+		const interval = setInterval(() => {
+			setActiveTool((prev) => (prev + 1) % tools.length);
+		}, 3000);
+		return () => clearInterval(interval);
+	}, []);
 
 	return (
-		<section className="py-32 px-6 bg-[#FBFBFB] relative overflow-hidden min-h-screen flex flex-col items-center justify-center">
-			{/* Background Grid */}
-			{/* <div className="absolute inset-0 bg-[linear-gradient(to_right,#e5e5e5_1px,transparent_1px),linear-gradient(to_bottom,#e5e5e5_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" /> */}
-
-			{/* Gradients */}
-			{/* <div className="absolute top-0 left-0 w-full h-[250px] bg-gradient-to-b from-[#FBFBFB] via-[#FBFBFB]/90 to-transparent pointer-events-none z-10" />
-			<div className="absolute bottom-0 left-0 w-full h-[250px] bg-gradient-to-t from-[#FBFBFB] via-[#FBFBFB]/90 to-transparent pointer-events-none z-10" /> */}
-
+		<section className="py-20 md:py-32 px-6 bg-[#FBFBFB] overflow-hidden">
 			{/* Header */}
-			<div className="max-w-[1600px] mx-auto text-center mb-16 relative z-20">
-				<h2 className="text-[6vw] md:text-[5vw] font-medium tracking-[-0.03em] text-black leading-[1.1] mb-6">
+			<div className="max-w-[1600px] mx-auto text-center mb-12 md:mb-20">
+				<h2 className="text-[8vw] md:text-[5vw] lg:text-[4.5vw] font-medium tracking-[-0.03em] text-black leading-[1.1] mb-4 md:mb-6">
 					With all the professional <br /> tools you rely on
 				</h2>
-				<p className="text-black/60 text-lg md:text-xl font-medium tracking-wide">In one seamless workflow</p>
+				<p className="text-black/60 text-base md:text-lg lg:text-xl font-medium tracking-wide">In one seamless workflow</p>
 			</div>
 
-			{/* Interactive Tool Area */}
-			<div className="relative w-full max-w-[1600px] h-[800px] z-20">
-				{/* Central Image Container - Sized to ~600px for "Actual Website" look */}
-				<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] md:w-[600px] md:h-[600px] z-10">
-					<motion.div
-						key={activeTool}
-						initial={{opacity: 0, scale: 0.98}}
-						animate={{opacity: 1, scale: 1}}
-						transition={{duration: 0.4, ease: [0.32, 0.72, 0, 1]}}
-						className="w-full h-full rounded-[40px] overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.12)] border border-black/5 bg-white ring-1 ring-black/5">
-						<Image
-							src={tools[activeTool].image}
-							alt={tools[activeTool].name}
-							fill
-							className="object-cover"
-							// sizes="(max-width: 768px) 350px, 600px"
-							priority
-							quality={100} // High quality as requested
-						/>
-					</motion.div>
+			{/* Main Container */}
+			<div className="max-w-7xl mx-auto relative">
+				{/* Desktop Layout - Three Column Grid */}
+				<div className="hidden md:grid md:grid-cols-[200px_1fr_200px] gap-8 items-center">
+					{/* Left Buttons */}
+					<div className="flex flex-col gap-3 justify-center">
+						{leftButtons.map((tool, idx) => (
+							<motion.button
+								key={tool.index}
+								onMouseEnter={() => setActiveTool(tool.index)}
+								onClick={() => setActiveTool(tool.index)}
+								initial={{opacity: 0, x: -20}}
+								whileInView={{opacity: 1, x: 0}}
+								viewport={{once: true}}
+								transition={{delay: idx * 0.05, duration: 0.3}}
+								className={`
+									px-5 py-2.5 rounded-full shadow-sm border text-[15px] font-medium
+									whitespace-nowrap transition-all duration-200 cursor-pointer
+									${
+										activeTool === tool.index
+											? "bg-[#D4FF00] border-[#D4FF00] text-black scale-105 shadow-md"
+											: "bg-white/90 backdrop-blur-sm border-black/10 text-black/70 hover:bg-[#D4FF00]/20 hover:border-[#D4FF00]/30 hover:scale-[1.02]"
+									}
+								`}>
+								{tool.name}
+							</motion.button>
+						))}
+					</div>
+
+					{/* Center Image */}
+					<div className="relative w-full aspect-square max-w-[600px] mx-auto">
+						<div className="absolute inset-0 bg-gradient-to-br from-zinc-50 to-zinc-100 rounded-3xl shadow-2xl overflow-hidden border border-black/5">
+							{tools.map((tool, idx) => (
+								<motion.img
+									key={idx}
+									src={tool.image}
+									alt={tool.name}
+									initial={{opacity: 0}}
+									animate={{opacity: activeTool === idx ? 1 : 0}}
+									transition={{duration: 0.5, ease: "easeInOut"}}
+									className="absolute inset-0 w-full h-full object-cover"
+								/>
+							))}
+						</div>
+					</div>
+
+					{/* Right Buttons */}
+					<div className="flex flex-col gap-3 justify-center">
+						{rightButtons.map((tool, idx) => (
+							<motion.button
+								key={tool.index}
+								onMouseEnter={() => setActiveTool(tool.index)}
+								onClick={() => setActiveTool(tool.index)}
+								initial={{opacity: 0, x: 20}}
+								whileInView={{opacity: 1, x: 0}}
+								viewport={{once: true}}
+								transition={{delay: idx * 0.05, duration: 0.3}}
+								className={`
+									px-5 py-2.5 rounded-full shadow-sm border text-[15px] font-medium
+									whitespace-nowrap transition-all duration-200 cursor-pointer
+									${
+										activeTool === tool.index
+											? "bg-[#D4FF00] border-[#D4FF00] text-black scale-105 shadow-md"
+											: "bg-white/90 backdrop-blur-sm border-black/10 text-black/70 hover:bg-[#D4FF00]/20 hover:border-[#D4FF00]/30 hover:scale-[1.02]"
+									}
+								`}>
+								{tool.name}
+							</motion.button>
+						))}
+					</div>
 				</div>
 
-				{/* Floating Tool Pills - Combined Map for Cleaner Code */}
-				{[...leftTools, ...rightTools].map((pos) => (
-					<motion.button
-						key={pos.index}
-						onMouseEnter={() => setActiveTool(pos.index)}
-						initial={{opacity: 0, y: 10}}
-						whileInView={{opacity: 1, y: 0}}
-						viewport={{once: true}}
-						transition={{delay: 0.1, duration: 0.3}}
-						className={`
-              absolute px-6 py-3 rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.05)] border flex items-center justify-center 
-              text-[15px] font-semibold z-20 whitespace-nowrap transition-all duration-200 cursor-pointer
-              ${
-					activeTool === pos.index
-						? "bg-[#dfff4f] border-[#dfff4f] text-black scale-110 shadow-md"
-						: "bg-white border-black/5 text-black/70 hover:bg-[#dfff4f] hover:border-[#dfff4f] hover:text-black hover:scale-105 hover:shadow-md"
-				}
-            `}
-						style={{
-							top: pos.top,
-							right: pos.right,
-							left: pos.left,
-						}}>
-						{tools[pos.index].name}
-					</motion.button>
-				))}
+				{/* Mobile Layout - Stacked */}
+				<div className="md:hidden flex flex-col items-center gap-6">
+					{/* Image */}
+					<div className="relative w-full aspect-square max-w-[400px] mx-auto">
+						<div className="absolute inset-0 bg-gradient-to-br from-zinc-50 to-zinc-100 rounded-2xl shadow-xl overflow-hidden border border-black/5">
+							{tools.map((tool, idx) => (
+								<motion.img
+									key={idx}
+									src={tool.image}
+									alt={tool.name}
+									initial={{opacity: 0}}
+									animate={{opacity: activeTool === idx ? 1 : 0}}
+									transition={{duration: 0.5, ease: "easeInOut"}}
+									className="absolute inset-0 w-full h-full object-cover"
+								/>
+							))}
+						</div>
+					</div>
+
+					{/* All Buttons - Mobile Grid */}
+					<div className="grid grid-cols-2 gap-2 w-full max-w-[400px]">
+						{[...leftButtons, ...rightButtons].map((tool) => (
+							<motion.button
+								key={tool.index}
+								onClick={() => setActiveTool(tool.index)}
+								initial={{opacity: 0, scale: 0.9}}
+								whileInView={{opacity: 1, scale: 1}}
+								viewport={{once: true}}
+								className={`
+									px-4 py-2 rounded-full shadow-sm border text-sm font-medium
+									whitespace-nowrap transition-all duration-200
+									${activeTool === tool.index ? "bg-[#D4FF00] border-[#D4FF00] text-black" : "bg-white/90 backdrop-blur-sm border-black/10 text-black/70"}
+								`}>
+								{tool.name}
+							</motion.button>
+						))}
+					</div>
+				</div>
 			</div>
 		</section>
 	);
