@@ -11,25 +11,41 @@ export default function ImageNode({id, data, isConnectable, selected}: NodeProps
 	const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	// Handle File Selection
+	// Helper: Convert File to Base64
+	const fileToBase64 = (file: File): Promise<string> => {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.readAsDataURL(file);
+			reader.onload = () => resolve(reader.result as string);
+			reader.onerror = (error) => reject(error);
+		});
+	};
+
 	const onFileChange = useCallback(
-		(evt: React.ChangeEvent<HTMLInputElement>) => {
+		async (evt: React.ChangeEvent<HTMLInputElement>) => {
 			const file = evt.target.files?.[0];
 			if (!file) return;
 
-			// 1. Create a local URL for preview (and for the LLM later)
-			const objectUrl = URL.createObjectURL(file);
+			try {
+				updateNodeData(id, {status: "loading"});
 
-			// 2. Update Store
-			updateNodeData(id, {
-				file: {
-					name: file.name,
-					type: file.type,
-					url: objectUrl,
-				},
-				status: "success",
-				errorMessage: undefined,
-			});
+				// 1. Convert to Base64
+				const base64String = await fileToBase64(file);
+
+				// 2. Update Store with the Base64 string
+				updateNodeData(id, {
+					file: {
+						name: file.name,
+						type: file.type,
+						url: base64String, // Now holds the real data
+					},
+					status: "success",
+					errorMessage: undefined,
+				});
+			} catch (error) {
+				console.error("Image processing failed", error);
+				updateNodeData(id, {status: "error", errorMessage: "Failed to process image"});
+			}
 		},
 		[id, updateNodeData]
 	);
@@ -37,7 +53,7 @@ export default function ImageNode({id, data, isConnectable, selected}: NodeProps
 	// Handle Remove Image
 	const clearImage = useCallback(
 		(e: React.MouseEvent) => {
-			e.stopPropagation(); // Prevent triggering the file input
+			e.stopPropagation();
 			updateNodeData(id, {file: undefined, status: "idle"});
 			if (fileInputRef.current) fileInputRef.current.value = "";
 		},

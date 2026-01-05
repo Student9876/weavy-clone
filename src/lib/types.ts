@@ -52,7 +52,7 @@ export interface ImageNodeData extends BaseNodeData {
 // -- LLM / Generation Node --
 export interface LLMNodeData extends BaseNodeData {
     // Configuration
-    model: 'gemini-pro' | 'gemini-1.5-flash' | 'gemini-pro-vision';
+    model: 'gemini-2.5-flash';
     temperature: number;
     systemInstruction?: string;
     maxTokens?: number;
