@@ -1,7 +1,7 @@
 "use client";
 
 import React, {useCallback, useRef} from "react";
-import {ReactFlow, Background, Controls, MiniMap, useReactFlow, ReactFlowProvider} from "@xyflow/react";
+import {ReactFlow, Background, Controls, MiniMap, useReactFlow, ReactFlowProvider, Connection, getOutgoers, Edge} from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import TextNode from "@/components/workflow/nodes/TextNode";
@@ -21,6 +21,69 @@ function FlowContent() {
 	const reactFlowWrapper = useRef<HTMLDivElement>(null);
 	const {nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode} = useWorkflowStore();
 	const {screenToFlowPosition} = useReactFlow();
+
+	// ------------------------------------------------------------------
+	// 🔒 VALIDATION LOGIC (TYPE SAFETY + DAG/CYCLE PREVENTION)
+	// ------------------------------------------------------------------
+	const isValidConnection = useCallback(
+		(connection: Edge | Connection) => {
+			// 1. Self Connection Check
+			if (connection.source === connection.target) return false;
+
+			// Find Nodes
+			const sourceNode = nodes.find((node) => node.id === connection.source);
+			const targetNode = nodes.find((node) => node.id === connection.target);
+
+			if (!sourceNode || !targetNode) return false;
+
+			// ----------------------------------------------------------------
+			// A. TYPE SAFETY CHECKS (Existing)
+			// ----------------------------------------------------------------
+
+			// Rule 1: Image Inputs -> Only Image Nodes
+			if (connection.targetHandle === "image") {
+				if (sourceNode.type !== "imageNode") return false;
+			}
+
+			// Rule 2: Prompt Inputs -> Only Text Producers
+			if (connection.targetHandle === "prompt" || connection.targetHandle === "system-prompt") {
+				const isTextProducer = sourceNode.type === "textNode" || sourceNode.type === "llmNode";
+				if (!isTextProducer) return false;
+			}
+
+			// Rule 3: Generic input handles block image nodes
+			if (connection.targetHandle === "input") {
+				if (sourceNode.type === "imageNode") return false;
+			}
+
+			// ----------------------------------------------------------------
+			// B. DAG / CYCLE DETECTION CHECK (New)
+			// ----------------------------------------------------------------
+
+			// We need to check if 'targetNode' can already reach 'sourceNode'.
+			// If it can, connecting source->target would create a closed loop.
+
+			const hasCycle = (node: AppNode, visited = new Set<string>()): boolean => {
+				if (visited.has(node.id)) return false;
+				visited.add(node.id);
+
+				// 1. Check direct neighbors
+				const outgoers = getOutgoers(node, nodes, edges);
+
+				// 2. If any neighbor IS the source node, we found a cycle!
+				if (outgoers.some((outgoer) => outgoer.id === sourceNode.id)) return true;
+
+				// 3. Recursive check for neighbors' neighbors
+				return outgoers.some((outgoer) => hasCycle(outgoer, visited));
+			};
+
+			// If a cycle is detected, block the connection
+			if (hasCycle(targetNode)) return false;
+
+			return true;
+		},
+		[nodes, edges]
+	);
 
 	const onDragOver = useCallback((event: React.DragEvent) => {
 		event.preventDefault();
@@ -42,7 +105,6 @@ function FlowContent() {
 			const newNodeId = crypto.randomUUID();
 			let newNode: AppNode;
 
-			// 1. FIXED: Correct Data Types matching types.ts exactly
 			if (type === "textNode") {
 				newNode = {
 					id: newNodeId,
@@ -58,7 +120,6 @@ function FlowContent() {
 					data: {label: "Image Input", status: "idle", inputType: "upload"},
 				};
 			} else {
-				// LLM Node
 				newNode = {
 					id: newNodeId,
 					type: "llmNode",
@@ -87,6 +148,7 @@ function FlowContent() {
 				onNodesChange={onNodesChange}
 				onEdgesChange={onEdgesChange}
 				onConnect={onConnect}
+				isValidConnection={isValidConnection}
 				onDrop={onDrop}
 				onDragOver={onDragOver}
 				nodeTypes={nodeTypes}
