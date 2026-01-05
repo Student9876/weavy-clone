@@ -7,11 +7,13 @@ import "@xyflow/react/dist/style.css";
 import Sidebar from "@/components/workflow/Sidebar";
 import TextNode from "@/components/workflow/nodes/TextNode";
 import ImageNode from "@/components/workflow/nodes/ImageNode"; // Don't forget this!
+import LLMNode from "@/components/workflow/nodes/LLMNode";
 import {useWorkflowStore} from "@/store/workflowStore";
 
 const nodeTypes = {
 	textNode: TextNode,
 	imageNode: ImageNode,
+	llmNode: LLMNode,
 };
 
 export default function EditorPage() {

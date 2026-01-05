@@ -25,6 +25,7 @@ type WorkflowState = {
     onConnect: OnConnect;
     updateNodeData: (id: string, data: Partial<AppNode['data']>) => void;
     resetWorkflow: () => void;
+    addNode: (node: AppNode) => void;
 };
 
 // Initial Data
@@ -48,6 +49,42 @@ const initialNodesData: AppNode[] = [
             label: "Product Image",
             status: 'idle',
             inputType: 'upload', // Required by ImageNodeData
+        },
+    },
+    {
+        id: "4",
+        type: "imageNode",
+        position: { x: 400, y: 350 },
+        data: {
+            label: "Product Image",
+            status: 'idle',
+            inputType: 'upload', // Required by ImageNodeData
+        },
+    },
+    {
+        id: "3",
+        type: "llmNode",
+        position: { x: 500, y: 100 },
+        data: {
+            label: "Gemini Processor",
+            status: 'idle',
+            model: 'gemini-1.5-flash',
+            temperature: 0.7,
+            outputs: [],
+            viewMode: 'single',
+        },
+    },
+    {
+        id: "5",
+        type: "llmNode",
+        position: { x: 500, y: 400 },
+        data: {
+            label: "Gemini Processor",
+            status: 'idle',
+            model: 'gemini-1.5-flash',
+            temperature: 0.7,
+            outputs: [],
+            viewMode: 'single',
         },
     },
 ];
@@ -94,10 +131,31 @@ export const useWorkflowStore = create<WorkflowState>()(
             resetWorkflow: () => {
                 set({ nodes: initialNodesData, edges: [] });
             },
+
+            addNode: (node: AppNode) => {
+                set({
+                    nodes: [...get().nodes, node],
+                });
+            }
         }),
         {
             name: 'workflow-storage', // unique name in localStorage
             storage: createJSONStorage(() => localStorage), // use browser local storage
+
+            // Version Control
+            version: 1, // Increment this number (e.g., to 2) whenever you change the data structure!
+
+            // This function runs when the stored version doesn't match the current version
+            migrate: (persistedState, version) => {
+                if (version !== 1) {
+                    // 🚀 FIX: Double cast to satisfy TypeScript
+                    return {
+                        nodes: initialNodesData,
+                        edges: [],
+                    } as unknown as WorkflowState;
+                }
+                return persistedState as WorkflowState;
+            },
         }
     )
 );
