@@ -5,7 +5,7 @@ import {Handle, Position, NodeProps} from "@xyflow/react";
 import {Type} from "lucide-react";
 import {cn} from "@/lib/utils";
 import {TextNodeType} from "@/lib/types";
-import {useWorkflowStore} from "@/store/workflowStore"; // Import the store
+import {useWorkflowStore} from "@/store/workflowStore";
 
 export default function TextNode({id, data, isConnectable, selected}: NodeProps<TextNodeType>) {
 	// 1. Select the update action from the store
@@ -41,7 +41,7 @@ export default function TextNode({id, data, isConnectable, selected}: NodeProps<
 				<label className="text-[10px] text-white/50 mb-1.5 block uppercase font-semibold">Value</label>
 				{/* 3. Bind value to data.text */}
 				<textarea
-					className="w-full bg-[#0a0a0a] text-xs text-white rounded-lg border border-white/10 p-2 focus:outline-none focus:border-[#dfff4f]/50 resize-y min-h-[80px] font-mono nodrag placeholder:text-white/20"
+					className="custom-scrollbar w-full bg-[#0a0a0a] text-xs text-white rounded-lg border border-white/10 p-2 focus:outline-none focus:border-[#dfff4f]/50 resize-y min-h-[80px] font-mono nodrag placeholder:text-white/20"
 					placeholder="Enter text..."
 					value={data.text}
 					onChange={onChange}
