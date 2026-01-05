@@ -1,18 +1,34 @@
 "use client";
 
-import React, {useCallback, useState} from "react";
+import React, {useCallback, useState, useEffect, useRef} from "react";
 import {Handle, Position, NodeProps, useReactFlow} from "@xyflow/react";
-import {Bot, Plus, Loader2, MoreHorizontal, Settings2, Copy, Check} from "lucide-react";
+import {Bot, Plus, Loader2, MoreHorizontal, Settings2, Copy, Check, Trash2} from "lucide-react";
 import {cn} from "@/lib/utils";
 import type {LLMNodeData, LLMNodeType, TextNodeData, ImageNodeData} from "@/lib/types";
 import {useWorkflowStore} from "@/store/workflowStore";
 import {generateContent} from "@/app/actions/gemini";
 
 export default function LLMNode({id, data, isConnectable, selected}: NodeProps<LLMNodeType>) {
+	// Use individual selectors to avoid infinite loop
 	const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
+	const deleteNode = useWorkflowStore((state) => state.deleteNode);
+
 	const {getNodes, getEdges} = useReactFlow();
 	const [hoveredHandle, setHoveredHandle] = useState<string | null>(null);
 	const [copied, setCopied] = useState(false);
+	const [showMenu, setShowMenu] = useState(false);
+	const menuRef = useRef<HTMLDivElement>(null);
+
+	// Close menu when clicking outside
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+				setShowMenu(false);
+			}
+		};
+		document.addEventListener("mousedown", handleClickOutside);
+		return () => document.removeEventListener("mousedown", handleClickOutside);
+	}, []);
 
 	const onModelChange = useCallback(
 		(e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -124,9 +140,32 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 					<span className="text-xs font-semibold text-white">{data.model || "gemini-2.5-flash"}</span>
 				</div>
 
-				<button className="p-1 hover:bg-white/5 rounded transition-colors">
-					<MoreHorizontal size={14} className="text-white/50" />
-				</button>
+				{/* Menu Button with Dropdown */}
+				<div className="relative" ref={menuRef}>
+					<button
+						onClick={(e) => {
+							e.stopPropagation();
+							setShowMenu(!showMenu);
+						}}
+						className={cn("p-1 rounded transition-colors", showMenu ? "bg-white/10 text-white" : "hover:bg-white/5 text-white/50")}>
+						<MoreHorizontal size={14} />
+					</button>
+
+					{/* Dropdown Menu */}
+					{showMenu && (
+						<div className="absolute right-0 top-6 w-32 bg-[#222] border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden">
+							<button
+								onClick={(e) => {
+									e.stopPropagation();
+									deleteNode(id);
+								}}
+								className="w-full text-left px-3 py-2 text-[10px] text-red-400 hover:bg-red-500/10 hover:text-red-300 flex items-center gap-2 transition-colors font-medium">
+								<Trash2 size={10} />
+								Delete Node
+							</button>
+						</div>
+					)}
+				</div>
 			</div>
 
 			{/* Body */}

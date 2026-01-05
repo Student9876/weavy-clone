@@ -26,6 +26,7 @@ type WorkflowState = {
     updateNodeData: (id: string, data: Partial<AppNode['data']>) => void;
     resetWorkflow: () => void;
     addNode: (node: AppNode) => void;
+    deleteNode: (id: string) => void;
 };
 
 // Initial Data - Empty canvas
@@ -78,7 +79,16 @@ export const useWorkflowStore = create<WorkflowState>()(
                 set({
                     nodes: [...get().nodes, node],
                 });
-            }
+            },
+
+            deleteNode: (id: string) => {
+                set((state) => ({
+                    // 1. Remove the node
+                    nodes: state.nodes.filter((node) => node.id !== id),
+                    // 2. Remove any edges connected to this node
+                    edges: state.edges.filter((edge) => edge.source !== id && edge.target !== id),
+                }));
+            },
         }),
         {
             name: 'workflow-storage',
