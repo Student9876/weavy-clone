@@ -28,67 +28,15 @@ type WorkflowState = {
     addNode: (node: AppNode) => void;
 };
 
-// Initial Data
-const initialNodesData: AppNode[] = [
-    {
-        id: "1",
-        type: "textNode",
-        position: { x: 100, y: 100 },
-        data: {
-            label: "System Prompt",
-            text: "You are a helpful AI assistant.",
-            status: 'idle',
-            isLocked: false,
-        },
-    },
-    {
-        id: "2",
-        type: "imageNode",
-        position: { x: 100, y: 350 },
-        data: {
-            label: "Product Image",
-            status: 'idle',
-            inputType: 'upload',
-        },
-    },
-    {
-        id: "3",
-        type: "llmNode",
-        position: { x: 500, y: 100 },
-        data: {
-            label: "Gemini Processor",
-            status: 'idle',
-            model: 'gemini-2.5-flash',
-            temperature: 0.7,
-            outputs: [],
-            viewMode: 'single',
-        },
-    },
-];
-
-// Initial Edges (Connections)
-const initialEdges: Edge[] = [
-    {
-        id: 'e1-3',
-        source: '1',
-        target: '3',
-        sourceHandle: null,
-        targetHandle: 'user_message',
-    },
-    {
-        id: 'e2-3',
-        source: '2',
-        target: '3',
-        sourceHandle: null,
-        targetHandle: 'images',
-    },
-];
+// Initial Data - Empty canvas
+const initialNodesData: AppNode[] = [];
+const initialEdges: Edge[] = [];
 
 export const useWorkflowStore = create<WorkflowState>()(
     persist(
         (set, get) => ({
             nodes: initialNodesData,
-            edges: initialEdges, // Changed from []
+            edges: initialEdges,
 
             onNodesChange: (changes: NodeChange[]) => {
                 set({
@@ -123,7 +71,7 @@ export const useWorkflowStore = create<WorkflowState>()(
             },
 
             resetWorkflow: () => {
-                set({ nodes: initialNodesData, edges: initialEdges }); // Also changed here
+                set({ nodes: initialNodesData, edges: initialEdges });
             },
 
             addNode: (node: AppNode) => {
@@ -135,13 +83,13 @@ export const useWorkflowStore = create<WorkflowState>()(
         {
             name: 'workflow-storage',
             storage: createJSONStorage(() => localStorage),
-            version: 2, // Increment version to clear old cache!
+            version: 3, // Incremented to clear old cached nodes
 
             migrate: (persistedState, version) => {
-                if (version !== 2) {
+                if (version !== 3) {
                     return {
                         nodes: initialNodesData,
-                        edges: initialEdges, // Changed here too
+                        edges: initialEdges,
                     } as unknown as WorkflowState;
                 }
                 return persistedState as WorkflowState;

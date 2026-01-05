@@ -2,7 +2,7 @@
 
 import React, {useState} from "react";
 import {Search, Type, ImageIcon, Bot, ChevronLeft, ChevronRight, Menu} from "lucide-react";
-import {cn} from "@/lib/utils"; // Assumes you have a utility for class merging, or just use clsx directly
+import {cn} from "@/lib/utils"; 
 
 const Sidebar = () => {
 	const [isCollapsed, setIsCollapsed] = useState(false);

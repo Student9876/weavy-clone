@@ -4,8 +4,7 @@ import React, {useCallback} from "react";
 import {Handle, Position, NodeProps, useReactFlow} from "@xyflow/react";
 import {Bot, Play, Loader2, Settings2, AlertCircle} from "lucide-react";
 import {cn} from "@/lib/utils";
-// Import specific node types for casting
-import type {LLMNodeData, LLMNodeType, TextNodeType, ImageNodeType} from "@/lib/types";
+import type {LLMNodeData, LLMNodeType, TextNodeData, ImageNodeData} from "@/lib/types";
 import {useWorkflowStore} from "@/store/workflowStore";
 import {generateContent} from "@/app/actions/gemini";
 
@@ -22,49 +21,51 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 
 	const handleRun = useCallback(async () => {
 		updateNodeData(id, {status: "loading", errorMessage: undefined});
+		console.log("--- RUN STARTED ---");
 
 		try {
-			const nodes = getNodes();
-			const edges = getEdges();
-			const targetEdges = edges.filter((edge) => edge.target === id);
+			const allNodes = getNodes();
+			const allEdges = getEdges();
+			const targetEdges = allEdges.filter((edge) => edge.target === id);
 
-			let systemPrompt = "";
-			let userMessage = "";
+			console.log(`Found ${targetEdges.length} connections to this node`);
+
+			let promptText = "";
 			const imageUrls: string[] = [];
 
+			// Collect all inputs from connected nodes
 			targetEdges.forEach((edge) => {
-				const sourceNode = nodes.find((n) => n.id === edge.source);
+				const sourceNode = allNodes.find((n) => n.id === edge.source);
 				if (!sourceNode) return;
 
-				// 1. Type Guard for Text Node
-				if (edge.targetHandle === "system_prompt" && sourceNode.type === "textNode") {
-					// Safe cast because we checked the type
-					const textData = (sourceNode as TextNodeType).data;
-					systemPrompt += textData.text || "";
+				console.log(`Connected node type: ${sourceNode.type}`);
+
+				// Handle Text Nodes
+				if (sourceNode.type === "textNode") {
+					const text = (sourceNode.data as TextNodeData).text;
+					if (text) promptText += text + "\n";
 				}
 
-				// 2. Type Guard for User Message
-				if (edge.targetHandle === "user_message" && sourceNode.type === "textNode") {
-					const textData = (sourceNode as TextNodeType).data;
-					userMessage += textData.text || "";
-				}
-
-				// 3. Type Guard for Image Node
-				if (edge.targetHandle === "images" && sourceNode.type === "imageNode") {
-					const imageData = (sourceNode as ImageNodeType).data;
-					if (imageData.file?.url) {
-						imageUrls.push(imageData.file.url);
+				// Handle Image Nodes
+				if (sourceNode.type === "imageNode") {
+					const file = (sourceNode.data as ImageNodeData).file;
+					if (file?.url) {
+						console.log("Found image:", file.name);
+						imageUrls.push(file.url);
 					}
 				}
 			});
 
-			if (!userMessage.trim() && imageUrls.length === 0) {
-				throw new Error("Input required: Please connect a Text Node or Image Node.");
+			console.log("Final Inputs:", {promptText: promptText.trim(), imageCount: imageUrls.length});
+
+			// Validation
+			if (!promptText.trim() && imageUrls.length === 0) {
+				throw new Error("Input required: Connect a Text Node or Image Node");
 			}
 
-			const finalPrompt = systemPrompt ? `System Instruction: ${systemPrompt}\n\nUser Request: ${userMessage}` : userMessage;
-
-			const result = await generateContent(data.model, finalPrompt, imageUrls);
+			// Call Gemini API
+			console.log("Using model:", data.model);
+			const result = await generateContent(data.model, promptText.trim(), imageUrls);
 
 			if (!result.success) {
 				throw new Error(result.error || "Failed to generate content");
@@ -76,16 +77,15 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 					{
 						id: crypto.randomUUID(),
 						type: "text",
-						content: result.text || "No response generated.",
+						content: result.text || "No response.",
 						timestamp: Date.now(),
 					},
 				],
 			});
 		} catch (error: unknown) {
-			// Fix: Use 'unknown' instead of 'any' in catch block
 			console.error("Run Failed:", error);
-			const msg = error instanceof Error ? error.message : "An unknown error occurred";
-			updateNodeData(id, {status: "error", errorMessage: msg});
+			const errorMessage = error instanceof Error ? error.message : "Unknown error";
+			updateNodeData(id, {status: "error", errorMessage});
 		}
 	}, [id, updateNodeData, getNodes, getEdges, data.model]);
 
@@ -109,6 +109,7 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 						<span className="text-[10px] text-white/40 font-mono">{data.model}</span>
 					</div>
 				</div>
+
 				<button
 					onClick={handleRun}
 					disabled={data.status === "loading"}
@@ -116,8 +117,15 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 						"flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all",
 						data.status === "loading" ? "bg-white/5 text-white/20 cursor-not-allowed" : "bg-[#dfff4f] text-black hover:bg-white active:scale-95"
 					)}>
-					{data.status === "loading" ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} fill="currentColor" />}
-					{data.status === "loading" ? "Running" : "Run"}
+					{data.status === "loading" ? (
+						<>
+							<Loader2 size={12} className="animate-spin" /> Running
+						</>
+					) : (
+						<>
+							<Play size={12} fill="currentColor" /> Run
+						</>
+					)}
 				</button>
 			</div>
 
@@ -131,16 +139,15 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 						value={data.model}
 						onChange={onModelChange}
 						className="w-full bg-[#0a0a0a] text-xs text-white rounded-lg border border-white/10 p-2 focus:outline-none focus:border-[#dfff4f]/50 cursor-pointer">
-						{/* Updated to real Gemini Model Names */}
-						<option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast)</option>
-						<option value="gemini-1.5-pro">Gemini 1.5 Pro (Powerful)</option>
-						<option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Experimental)</option>
+						<option value="gemini-1.5-flash-latest">Gemini 1.5 Flash (Fast)</option>
+						<option value="gemini-1.5-pro-latest">Gemini 1.5 Pro (Powerful)</option>
+						<option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
 					</select>
 				</div>
 
 				{latestOutput && (
 					<div className="space-y-1.5 animate-in fade-in duration-300">
-						<label className="text-[10px] text-[#dfff4f] uppercase font-semibold flex items-center gap-1.5">Output</label>
+						<label className="text-[10px] text-[#dfff4f] uppercase font-semibold flex items-center gap-1.5">Generated Output</label>
 						<div className="bg-[#0a0a0a] rounded-lg border border-white/10 p-3 text-xs text-white/90 leading-relaxed font-mono max-h-[200px] overflow-y-auto">
 							{latestOutput}
 						</div>
@@ -155,35 +162,23 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 				)}
 			</div>
 
-			{/* Handles */}
-			<div className="absolute -left-3 top-[80px] group">
-				<Handle
-					type="target"
-					position={Position.Left}
-					id="system_prompt"
-					isConnectable={isConnectable}
-					className="!w-3 !h-3 !bg-[#1a1a1a] !border-purple-400"
-				/>
-			</div>
-			<div className="absolute -left-3 top-[120px] group">
-				<Handle
-					type="target"
-					position={Position.Left}
-					id="user_message"
-					isConnectable={isConnectable}
-					className="!w-3 !h-3 !bg-[#1a1a1a] !border-blue-400"
-				/>
-			</div>
-			<div className="absolute -left-3 top-[160px] group">
-				<Handle
-					type="target"
-					position={Position.Left}
-					id="images"
-					isConnectable={isConnectable}
-					className="!w-3 !h-3 !bg-[#1a1a1a] !border-orange-400"
-				/>
-			</div>
-			<Handle type="source" position={Position.Right} id="output" isConnectable={isConnectable} className="!w-3 !h-3 !bg-[#dfff4f]" />
+			{/* Single Input Handle (Left) */}
+			<Handle
+				type="target"
+				position={Position.Left}
+				id="input"
+				isConnectable={isConnectable}
+				className="!w-3 !h-3 !bg-[#1a1a1a] !border-2 !border-blue-400"
+			/>
+
+			{/* Output Handle (Right) */}
+			<Handle
+				type="source"
+				position={Position.Right}
+				id="output"
+				isConnectable={isConnectable}
+				className="!w-3 !h-3 !bg-[#dfff4f] !border-2 !border-[#1a1a1a]"
+			/>
 		</div>
 	);
 }
