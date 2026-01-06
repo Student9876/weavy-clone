@@ -19,7 +19,7 @@ import { AppNode } from '@/lib/types';
 type WorkflowState = {
     nodes: AppNode[];
     edges: Edge[];
-
+    workflowId: string | null;
     // Actions
     onNodesChange: OnNodesChange;
     onEdgesChange: OnEdgesChange;
@@ -28,6 +28,7 @@ type WorkflowState = {
     resetWorkflow: () => void;
     addNode: (node: AppNode) => void;
     deleteNode: (id: string) => void;
+    setWorkflowId: (id: string) => void;
 };
 
 // Initial Data - Empty canvas
@@ -39,6 +40,7 @@ export const useWorkflowStore = create<WorkflowState>()(
 
         persist(
             (set, get) => ({
+                workflowId: null,
                 nodes: initialNodesData,
                 edges: initialEdges,
 
@@ -100,6 +102,9 @@ export const useWorkflowStore = create<WorkflowState>()(
                         edges: state.edges.filter((edge) => edge.source !== id && edge.target !== id),
                     }));
                 },
+                setWorkflowId: (id: string) => {
+                    set({ workflowId: id });
+                },
             }),
             {
                 name: 'workflow-storage',
@@ -123,8 +128,8 @@ export const useWorkflowStore = create<WorkflowState>()(
             // This ensures we ONLY track data, not functions/actions.
             // Without this, Zundo tries to restore functions which corrupts the store.
             partialize: (state) => {
-                const { nodes, edges } = state;
-                return { nodes, edges };
+                const { nodes, edges, workflowId } = state;
+                return { nodes, edges, workflowId };
             },
             // Equality: THIS is where we exclude position from TRIGGERING a save.
             // If the only difference between 'past' and 'current' is position/selection, we say "They are Equal" -> No Save.
