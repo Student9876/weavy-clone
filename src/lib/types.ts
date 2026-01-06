@@ -57,6 +57,9 @@ export interface LLMNodeData extends BaseNodeData {
     systemInstruction?: string;
     maxTokens?: number;
 
+    // Dynamic Input Handles
+    imageHandleCount: number; // Track number of image input handles
+
     // History / Results
     outputs: Array<{
         id: string;

@@ -44,7 +44,7 @@ function FlowContent() {
 			// ----------------------------------------------------------------
 
 			// Rule 1: Image Inputs -> Only Image Nodes
-			if (connection.targetHandle === "image") {
+			if (connection.targetHandle?.startsWith("image")) {
 				if (sourceNode.type !== "imageNode") return false;
 			}
 
@@ -134,6 +134,7 @@ function FlowContent() {
 						temperature: 0.7,
 						viewMode: "single",
 						outputs: [],
+						imageHandleCount: 1, // Add this line
 					},
 				};
 			}
@@ -144,22 +145,22 @@ function FlowContent() {
 	);
 
 	useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Undo: Ctrl+Z or Cmd+Z
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        undo();
-      }
-      // Redo: Ctrl+Y or Cmd+Shift+Z
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
-        e.preventDefault();
-        redo();
-      }
-    };
+		const handleKeyDown = (e: KeyboardEvent) => {
+			// Undo: Ctrl+Z or Cmd+Z
+			if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+				e.preventDefault();
+				undo();
+			}
+			// Redo: Ctrl+Y or Cmd+Shift+Z
+			if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.shiftKey && e.key === "z"))) {
+				e.preventDefault();
+				redo();
+			}
+		};
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo]);
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [undo, redo]);
 
 	return (
 		<div className="flex-1 relative h-full" ref={reactFlowWrapper}>
