@@ -1,7 +1,8 @@
 "use client";
 
 import React, {useCallback, useRef, useEffect} from "react";
-import {ReactFlow, Background, Controls, MiniMap, useReactFlow, ReactFlowProvider, Connection, getOutgoers, Edge, Panel} from "@xyflow/react";
+import {ReactFlow, Background, Controls, MiniMap, useReactFlow, ReactFlowProvider, Connection, getOutgoers, Edge, Panel, ConnectionLineType} from "@xyflow/react";
+import AnimatedEdge from "./edges/AnimatedEdge";
 import "@xyflow/react/dist/style.css";
 
 import TextNode from "@/components/workflow/nodes/TextNode";
@@ -16,6 +17,10 @@ const nodeTypes = {
 	textNode: TextNode,
 	imageNode: ImageNode,
 	llmNode: LLMNode,
+};
+
+const edgeTypes = {
+	animatedEdge: AnimatedEdge,
 };
 
 // The internal content that uses useReactFlow
@@ -134,7 +139,7 @@ function FlowContent() {
 						temperature: 0.7,
 						viewMode: "single",
 						outputs: [],
-						imageHandleCount: 1, // Add this line
+						imageHandleCount: 1,
 					},
 				};
 			}
@@ -173,7 +178,10 @@ function FlowContent() {
 				isValidConnection={isValidConnection}
 				onDrop={onDrop}
 				onDragOver={onDragOver}
+				connectionLineStyle={{ stroke: '#fff', strokeWidth: 2 }}
+				connectionLineType={ConnectionLineType.Bezier}
 				nodeTypes={nodeTypes}
+				edgeTypes={edgeTypes}
 				colorMode="dark"
 				fitView>
 				<Background color="#333" gap={20} size={1} />

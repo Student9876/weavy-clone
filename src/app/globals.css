@@ -16,3 +16,8 @@
 				.custom-scrollbar::-webkit-scrollbar-thumb:hover {
 					background: rgba(223, 255, 79, 0.5);
 				}
+
+/* Customizes the React Flow animated edge stroke */
+.react-flow__edge-path {
+    stroke-linecap: round;
+}
