@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { temporal } from "zundo";
 import {
     addEdge,
     applyNodeChanges,
@@ -34,75 +35,107 @@ const initialNodesData: AppNode[] = [];
 const initialEdges: Edge[] = [];
 
 export const useWorkflowStore = create<WorkflowState>()(
-    persist(
-        (set, get) => ({
-            nodes: initialNodesData,
-            edges: initialEdges,
+    temporal(
 
-            onNodesChange: (changes: NodeChange[]) => {
-                set({
-                    nodes: applyNodeChanges(changes, get().nodes) as AppNode[],
-                });
-            },
+        persist(
+            (set, get) => ({
+                nodes: initialNodesData,
+                edges: initialEdges,
 
-            onEdgesChange: (changes: EdgeChange[]) => {
-                set({
-                    edges: applyEdgeChanges(changes, get().edges),
-                });
-            },
+                onNodesChange: (changes: NodeChange[]) => {
+                    set({
+                        nodes: applyNodeChanges(changes, get().nodes) as AppNode[],
+                    });
+                },
 
-            onConnect: (connection: Connection) => {
-                set({
-                    edges: addEdge(connection, get().edges),
-                });
-            },
+                onEdgesChange: (changes: EdgeChange[]) => {
+                    set({
+                        edges: applyEdgeChanges(changes, get().edges),
+                    });
+                },
 
-            updateNodeData: (id: string, newData: Partial<AppNode['data']>) => {
-                set({
-                    nodes: get().nodes.map((node) => {
-                        if (node.id === id) {
-                            return {
-                                ...node,
-                                data: { ...node.data, ...newData },
-                            };
-                        }
-                        return node;
-                    }),
-                });
-            },
+                onConnect: (connection: Connection) => {
+                    set({
+                        edges: addEdge(connection, get().edges),
+                    });
+                },
 
-            resetWorkflow: () => {
-                set({ nodes: initialNodesData, edges: initialEdges });
-            },
+                updateNodeData: (id: string, newData: Partial<AppNode['data']>) => {
+                    set({
+                        nodes: get().nodes.map((node) => {
+                            if (node.id === id) {
+                                return {
+                                    ...node,
+                                    data: { ...node.data, ...newData },
+                                };
+                            }
+                            return node;
+                        }),
+                    });
+                },
 
-            addNode: (node: AppNode) => {
-                set({
-                    nodes: [...get().nodes, node],
-                });
-            },
+                resetWorkflow: () => {
+                    set({ nodes: initialNodesData, edges: initialEdges });
+                },
 
-            deleteNode: (id: string) => {
-                set((state) => ({
-                    // 1. Remove the node
-                    nodes: state.nodes.filter((node) => node.id !== id),
-                    // 2. Remove any edges connected to this node
-                    edges: state.edges.filter((edge) => edge.source !== id && edge.target !== id),
-                }));
-            },
-        }),
+                addNode: (node: AppNode) => {
+                    set({
+                        nodes: [...get().nodes, node],
+                    });
+                },
+
+                deleteNode: (id: string) => {
+                    set((state) => ({
+                        // 1. Remove the node
+                        nodes: state.nodes.filter((node) => node.id !== id),
+                        // 2. Remove any edges connected to this node
+                        edges: state.edges.filter((edge) => edge.source !== id && edge.target !== id),
+                    }));
+                },
+            }),
+            {
+                name: 'workflow-storage',
+                storage: createJSONStorage(() => localStorage),
+                version: 3, // Incremented to clear old cached nodes
+
+                migrate: (persistedState, version) => {
+                    if (version !== 3) {
+                        return {
+                            nodes: initialNodesData,
+                            edges: initialEdges,
+                        } as unknown as WorkflowState;
+                    }
+                    return persistedState as WorkflowState;
+                },
+            }
+        ),
         {
-            name: 'workflow-storage',
-            storage: createJSONStorage(() => localStorage),
-            version: 3, // Incremented to clear old cached nodes
-
-            migrate: (persistedState, version) => {
-                if (version !== 3) {
+            // Keep last 100 states
+            limit: 100,
+            // This ensures we ONLY track data, not functions/actions.
+            // Without this, Zundo tries to restore functions which corrupts the store.
+            partialize: (state) => {
+                const { nodes, edges } = state;
+                return { nodes, edges };
+            },
+            // Equality: THIS is where we exclude position from TRIGGERING a save.
+            // If the only difference between 'past' and 'current' is position/selection, we say "They are Equal" -> No Save.
+            equality: (pastState, currentState) => {
+                // Helper to strip out volatile properties (position, selection, dimensions)
+                const stripVolatile = (state: Partial<WorkflowState>) => {
+                    if (!state.nodes || !state.edges) return {};
                     return {
-                        nodes: initialNodesData,
-                        edges: initialEdges,
-                    } as unknown as WorkflowState;
-                }
-                return persistedState as WorkflowState;
+                        edges: state.edges, // Edges rarely change randomly, so we keep them full
+                        nodes: state.nodes.map((node) => {
+                            // Destructure out the fields we want to IGNORE during comparison
+                            const { position, measured, selected, dragging, ...stableData } = node;
+                            return stableData;
+                        }),
+                    };
+                };
+
+                // Compare the "Cleaned" versions
+                return JSON.stringify(stripVolatile(pastState)) === JSON.stringify(stripVolatile(currentState));
             },
         }
     )

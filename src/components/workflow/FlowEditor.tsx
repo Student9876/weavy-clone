@@ -1,13 +1,15 @@
 "use client";
 
-import React, {useCallback, useRef} from "react";
-import {ReactFlow, Background, Controls, MiniMap, useReactFlow, ReactFlowProvider, Connection, getOutgoers, Edge} from "@xyflow/react";
+import React, {useCallback, useRef, useEffect} from "react";
+import {ReactFlow, Background, Controls, MiniMap, useReactFlow, ReactFlowProvider, Connection, getOutgoers, Edge, Panel} from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import TextNode from "@/components/workflow/nodes/TextNode";
 import ImageNode from "@/components/workflow/nodes/ImageNode";
 import LLMNode from "@/components/workflow/nodes/LLMNode";
 import {useWorkflowStore} from "@/store/workflowStore";
+import UndoRedoControls from "./UndoRedoControls";
+import {useStore} from "zustand";
 import {AppNode} from "@/lib/types";
 
 const nodeTypes = {
@@ -21,6 +23,7 @@ function FlowContent() {
 	const reactFlowWrapper = useRef<HTMLDivElement>(null);
 	const {nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode} = useWorkflowStore();
 	const {screenToFlowPosition} = useReactFlow();
+	const {undo, redo} = useStore(useWorkflowStore.temporal);
 
 	// ------------------------------------------------------------------
 	// 🔒 VALIDATION LOGIC (TYPE SAFETY + DAG/CYCLE PREVENTION)
@@ -140,6 +143,24 @@ function FlowContent() {
 		[screenToFlowPosition, addNode]
 	);
 
+	useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Undo: Ctrl+Z or Cmd+Z
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
+      // Redo: Ctrl+Y or Cmd+Shift+Z
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+        e.preventDefault();
+        redo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undo, redo]);
+
 	return (
 		<div className="flex-1 relative h-full" ref={reactFlowWrapper}>
 			<ReactFlow
@@ -157,6 +178,10 @@ function FlowContent() {
 				<Background color="#333" gap={20} size={1} />
 				<Controls className="bg-[#1a1a1a] border-white/10 fill-white text-white" />
 				<MiniMap className="bg-[#1a1a1a] border border-white/10" maskColor="rgba(0,0,0, 0.7)" nodeColor={() => "#dfff4f"} />
+				{/* Undo/Redo Controls */}
+				<Panel position="bottom-left" className="mb-12 ml-2">
+					<UndoRedoControls />
+				</Panel>
 			</ReactFlow>
 		</div>
 	);
