@@ -13,7 +13,7 @@ const ExecuteRequestSchema = z.object({
         'gemini-1.5-pro-latest',
         'gemini-2.5-flash'
     ]),
-    prompt: z.string().min(1, "Prompt cannot be empty"),
+    prompt: z.string(), // ✅ Removed .min(1) - allow empty when images/systemPrompt exist
     systemPrompt: z.string().optional(),
     imageUrls: z.array(z.string()).optional().default([]),
     temperature: z.number().min(0).max(2).optional().default(0.7),
@@ -27,6 +27,21 @@ export async function POST(req: NextRequest) {
         // Parse and validate request body
         const body = await req.json();
         const validated = ExecuteRequestSchema.parse(body);
+
+        // ✅ Custom validation: At least one input must be provided
+        const hasPrompt = validated.prompt && validated.prompt.trim().length > 0;
+        const hasSystemPrompt = validated.systemPrompt && validated.systemPrompt.trim().length > 0;
+        const hasImages = validated.imageUrls && validated.imageUrls.length > 0;
+
+        if (!hasPrompt && !hasSystemPrompt && !hasImages) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'At least one input required: prompt, system prompt, or images'
+                },
+                { status: 400 }
+            );
+        }
 
         // Generate content using Gemini with retry logic
         const result = await executeGeminiWithRetry(validated, 3);
@@ -131,10 +146,22 @@ async function executeGemini(request: ExecuteRequest) {
             }
         });
 
-        // Combine system and user prompts
-        let finalPrompt = request.prompt;
-        if (request.systemPrompt) {
-            finalPrompt = `${request.systemPrompt}\n\n${request.prompt}`;
+        // Build the final prompt
+        let finalPrompt = request.prompt?.trim() || "";
+
+        // ✅ If there's a system prompt, use it
+        if (request.systemPrompt?.trim()) {
+            if (finalPrompt) {
+                finalPrompt = `${request.systemPrompt.trim()}\n\n${finalPrompt}`;
+            } else {
+                // Only system prompt, no user prompt
+                finalPrompt = request.systemPrompt.trim();
+            }
+        }
+
+        // ✅ If no prompt at all but there are images, add a default
+        if (!finalPrompt && request.imageUrls && request.imageUrls.length > 0) {
+            finalPrompt = "Describe and analyze these images in detail.";
         }
 
         // Handle images if provided
