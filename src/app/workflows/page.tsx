@@ -225,35 +225,33 @@ export default function DashboardPage() {
 								<p className="text-white/50">{searchQuery ? "No workflows found." : "No files yet. Create one to get started!"}</p>
 							</div>
 						) : (
-							<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+							<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
 								{filteredWorkflows.map((wf) => (
 									<Link
 										key={wf.id}
 										href={`/workflows/${wf.id}`}
-										className="group relative rounded-xl overflow-hidden bg-[#1a1a1a] hover:bg-[#252525] border border-white/10 hover:border-white/20 transition-all">
-										{/* Thumbnail Section - Square aspect ratio */}
-										<div className="relative aspect-square bg-[#1a1a1a] flex items-center justify-center">
+										className="group relative rounded-lg overflow-hidden bg-[#1a1a1a] hover:bg-[#252525] border border-white/10 hover:border-white/20 transition-all">
+										{/* Thumbnail Section - Fixed height */}
+										<div className="relative h-32 bg-[#1a1a1a] flex items-center justify-center">
 											{/* Workflow Icon */}
 											<div className="text-white/20 group-hover:text-white/30 transition-colors">
-												<WorkflowIcon size={48} />
+												<WorkflowIcon size={40} />
 											</div>
 
 											{/* Delete Button */}
 											<button
 												onClick={(e) => handleDelete(wf.id, e)}
-												className="absolute top-2 right-2 p-1.5 rounded-md bg-black/50 backdrop-blur-sm hover:bg-red-500/90 text-white/60 hover:text-white opacity-0 group-hover:opacity-100 transition-all"
+												className="absolute top-1.5 right-1.5 p-1 rounded-md bg-black/50 backdrop-blur-sm hover:bg-red-500/90 text-white/60 hover:text-white opacity-0 group-hover:opacity-100 transition-all"
 												title="Delete workflow">
-												<Trash2 size={12} />
+												<Trash2 size={11} />
 											</button>
 										</div>
 
 										{/* Info Section */}
-										<div className="p-3">
-											<h3 className="font-semibold text-sm text-white truncate mb-1">
-												{wf.name}
-											</h3>
-											<p className="text-[10px] text-white/40 flex items-center gap-1">
-												<Clock size={9} />
+										<div className="p-2.5">
+											<h3 className="font-medium text-xs text-white truncate mb-0.5">{wf.name}</h3>
+											<p className="text-[9px] text-white/40 flex items-center gap-1">
+												<Clock size={8} />
 												Last edited {getRelativeTime(wf.created_at)}
 											</p>
 										</div>
