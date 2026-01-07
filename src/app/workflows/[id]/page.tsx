@@ -48,10 +48,12 @@ export default function EditorPage() {
 				const res = await loadWorkflowAction(workflowId);
 				if (res.success && res.data) {
 					const flowData = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
+					// Load the workflow
 					useWorkflowStore.setState({
 						nodes: flowData.nodes || [],
 						edges: flowData.edges || [],
 						workflowId: workflowId,
+						workflowName: res.name || "Untitled Workflow", // Changed from res.data.name to res.name
 					});
 				} else {
 					// Workflow not found, start with empty state

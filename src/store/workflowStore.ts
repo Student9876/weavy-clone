@@ -20,6 +20,7 @@ type WorkflowState = {
     nodes: AppNode[];
     edges: Edge[];
     workflowId: string | null;
+    workflowName: string;
     // Actions
     onNodesChange: OnNodesChange;
     onEdgesChange: OnEdgesChange;
@@ -29,6 +30,7 @@ type WorkflowState = {
     addNode: (node: AppNode) => void;
     deleteNode: (id: string) => void;
     setWorkflowId: (id: string) => void;
+    setWorkflowName: (name: string) => void;
 };
 
 // Initial Data - Empty canvas
@@ -37,12 +39,12 @@ const initialEdges: Edge[] = [];
 
 export const useWorkflowStore = create<WorkflowState>()(
     temporal(
-
         persist(
             (set, get) => ({
                 workflowId: null,
                 nodes: initialNodesData,
                 edges: initialEdges,
+                workflowName: "Untitled Workflow",
 
                 onNodesChange: (changes: NodeChange[]) => {
                     set({
@@ -104,6 +106,9 @@ export const useWorkflowStore = create<WorkflowState>()(
                 },
                 setWorkflowId: (id: string) => {
                     set({ workflowId: id });
+                },
+                setWorkflowName: (name: string) => {
+                    set({ workflowName: name });
                 },
             }),
             {
