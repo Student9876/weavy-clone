@@ -46,7 +46,7 @@ export default function Header() {
 		}
 	};
 
-	// --- 🚀 HANDLE SHARE (Export as JSON) ---
+	// --- HANDLE SHARE (Export as JSON) ---
 	const handleShare = useCallback(() => {
 		if (nodes.length === 0) {
 			alert("Nothing to share! The canvas is empty.");
@@ -86,7 +86,7 @@ export default function Header() {
 
 	return (
 		<>
-			<header className="flex items-center justify-between px-6 py-3 border-b border-white/10 bg-[#111]">
+			<header className="flex items-center justify-between px-6 py-3 m-6 border-b border-white/10 bg-[#111]">
 				{/* --- LEFT SIDE (Logo + Name Input) --- */}
 				<div className="flex items-center gap-3">
 					<div className="w-6 h-6 rounded bg-gradient-to-tr from-pink-500 to-purple-500"></div>
