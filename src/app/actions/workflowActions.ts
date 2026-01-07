@@ -18,21 +18,21 @@ export async function saveWorkflowAction({ id, name, nodes, edges }: SaveWorkflo
         if (id) {
             console.log(`🔒 Updating Workflow ID: ${id}`);
             const sql = `
-            UPDATE workflows 
-            SET data = $1, name = $2 
-            WHERE id = $3 
-            RETURNING id;
-        `;
+                UPDATE workflows 
+                SET data = $1, name = $2, updated_at = CURRENT_TIMESTAMP 
+                WHERE id = $3 
+                RETURNING id;
+            `;
             await query(sql, [workflowJson, name, id]);
             return { success: true, id };
 
         } else {
             console.log("🔒 Creating New Workflow");
             const sql = `
-            INSERT INTO workflows (name, data) 
-            VALUES ($1, $2)
-            RETURNING id;
-        `;
+                INSERT INTO workflows (name, data, created_at, updated_at) 
+                VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                RETURNING id;
+            `;
             const result = await query(sql, [name, workflowJson]);
             return { success: true, id: result.rows[0].id };
         }
@@ -66,9 +66,9 @@ export async function loadWorkflowAction(id: string) {
 export async function getAllWorkflowsAction() {
     try {
         const sql = `
-            SELECT id, name, created_at 
+            SELECT id, name, created_at, updated_at 
             FROM workflows 
-            ORDER BY created_at DESC
+            ORDER BY updated_at DESC
         `;
         const result = await query(sql);
 

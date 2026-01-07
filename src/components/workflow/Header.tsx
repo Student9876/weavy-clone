@@ -140,7 +140,7 @@ export default function Header() {
 						disabled={isSaving}
 						className="flex items-center gap-2 px-4 py-2 bg-[#dfff4f] text-black text-xs font-bold rounded-lg hover:bg-white transition-all disabled:opacity-50 hover:scale-105 active:scale-95">
 						{isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-						{isSaving ? "SAVING..." : workflowId ? "UPDATE" : "SAVE"}
+						{isSaving ? "SAVING..." : "SAVE"}
 					</button>
 				</div>
 			</header>

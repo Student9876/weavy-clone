@@ -14,6 +14,7 @@ interface Workflow {
 	id: string;
 	name: string;
 	created_at: string;
+	updated_at: string;
 }
 
 export default function DashboardPage() {
@@ -201,7 +202,7 @@ export default function DashboardPage() {
 													<h3 className="font-medium text-xs text-white truncate mb-0.5">{wf.name}</h3>
 													<p className="text-[9px] text-white/40 flex items-center gap-1">
 														<Clock size={8} />
-														Last edited {getRelativeTime(wf.created_at)}
+														Last edited {getRelativeTime(wf.updated_at)}
 													</p>
 												</div>
 												{/* Delete Button */}
