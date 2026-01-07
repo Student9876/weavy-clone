@@ -68,38 +68,49 @@ Do not write marketing copy yet. Just output the raw facts and visual details.`
                 },
 
                 {
+                    id: 'prompt-amazon',
+                    type: 'textNode',
+                    position: { x: 750, y: 0 },
+                    data: {
+                        label: 'Write Amazon Listing',
+                        status: 'idle',
+                        text: `Write a compelling Amazon product listing based on the product analysis provided. Include:
+- A catchy product title (60-80 characters)
+- 5-7 bullet points highlighting key features and benefits
+- Use persuasive, customer-focused language
+- Focus on value proposition and unique selling points`
+                    }
+                },
+
+                {
+                    id: 'prompt-instagram',
+                    type: 'textNode',
+                    position: { x: 750, y: 350 },
+                    data: {
+                        label: 'Write Instagram Caption',
+                        status: 'idle',
+                        text: `Create an engaging Instagram caption based on the product details provided:
+- Keep it under 150 words
+- Include relevant emojis
+- Add a strong call-to-action
+- Use 3-5 relevant hashtags
+- Make it trendy and shareable`
+                    }
+                },
+
+                {
                     id: 'prompt-seo',
                     type: 'textNode',
-                    position: { x: 750, y: -100 },
+                    position: { x: 750, y: 700 },
                     data: {
-                        label: 'SEO Rules',
+                        label: 'Write SEO Meta Description',
                         status: 'idle',
-                        text: `You are an SEO Expert. 
-Based on the provided product analysis, generate a JSON list of 20 high-traffic keywords and 3 meta-descriptions (160 chars max) optimized for Google Shopping.`
-                    }
-                },
-
-                {
-                    id: 'prompt-desc',
-                    type: 'textNode',
-                    position: { x: 750, y: 250 },
-                    data: {
-                        label: 'Copy Style',
-                        status: 'idle',
-                        text: `You are a Senior Copywriter. 
-Using the provided product specs, write a compelling Amazon Product Description. Use bullet points for features and an engaging, energetic tone.`
-                    }
-                },
-
-                {
-                    id: 'prompt-social',
-                    type: 'textNode',
-                    position: { x: 750, y: 600 },
-                    data: {
-                        label: 'Social Strategy',
-                        status: 'idle',
-                        text: `You are a Social Media Influencer. 
-Create 3 variations of an Instagram caption based on these product details. Include relevant emojis and a call to action. Keep it trendy and short.`
+                        text: `Write an SEO-optimized meta description based on the product analysis:
+- Keep it between 150-160 characters
+- Include primary keywords naturally
+- Make it compelling and click-worthy
+- Include a call-to-action
+- Focus on benefits and unique features`
                     }
                 },
 
@@ -123,45 +134,45 @@ Create 3 variations of an Instagram caption based on these product details. Incl
                 },
 
                 {
-                    id: 'text-seo',
+                    id: 'llm-amazon',
                     type: 'llmNode',
                     position: { x: 1000, y: 0 },
                     data: {
-                        label: 'SEO Specialist',
+                        label: 'Amazon Listing',
                         status: 'idle',
                         model: 'gemini-2.5-flash',
                         outputs: [],
-                        temperature: 0.2,
+                        temperature: 0.7,
                         viewMode: 'single',
                         imageHandleCount: 0,
                         systemPrompt: ""
                     }
                 },
                 {
-                    id: 'text-desc',
+                    id: 'llm-instagram',
                     type: 'llmNode',
                     position: { x: 1000, y: 350 },
                     data: {
-                        label: 'Copywriter',
-                        status: 'idle',
-                        model: 'gemini-2.5-flash',
-                        outputs: [],
-                        temperature: 0.8,
-                        viewMode: 'single',
-                        imageHandleCount: 0,
-                        systemPrompt: ""
-                    }
-                },
-                {
-                    id: 'text-social',
-                    type: 'llmNode',
-                    position: { x: 1000, y: 700 },
-                    data: {
-                        label: 'Social Manager',
+                        label: 'Instagram Caption',
                         status: 'idle',
                         model: 'gemini-2.5-flash',
                         outputs: [],
                         temperature: 0.9,
+                        viewMode: 'single',
+                        imageHandleCount: 0,
+                        systemPrompt: ""
+                    }
+                },
+                {
+                    id: 'llm-seo',
+                    type: 'llmNode',
+                    position: { x: 1000, y: 700 },
+                    data: {
+                        label: 'SEO Meta Description',
+                        status: 'idle',
+                        model: 'gemini-2.5-flash',
+                        outputs: [],
+                        temperature: 0.5,
                         viewMode: 'single',
                         imageHandleCount: 0,
                         systemPrompt: ""
@@ -175,16 +186,16 @@ Create 3 variations of an Instagram caption based on these product details. Incl
                 { id: 'e2', source: 'img-2', target: 'llm-merger', targetHandle: 'image-1', type: 'animatedEdge', animated: true },
                 { id: 'e3', source: 'img-3', target: 'llm-merger', targetHandle: 'image-2', type: 'animatedEdge', animated: true },
 
-                // Connect PROMPTS to LLMs
+                // Connect PROMPTS to LLMs (System Instructions)
                 { id: 'p1', source: 'prompt-merger', target: 'llm-merger', targetHandle: 'system-prompt', type: 'default' },
-                { id: 'p2', source: 'prompt-seo', target: 'text-seo', targetHandle: 'system-prompt', type: 'default' },
-                { id: 'p3', source: 'prompt-desc', target: 'text-desc', targetHandle: 'system-prompt', type: 'default' },
-                { id: 'p4', source: 'prompt-social', target: 'text-social', targetHandle: 'system-prompt', type: 'default' },
+                { id: 'p2', source: 'prompt-amazon', target: 'llm-amazon', targetHandle: 'system-prompt', type: 'default' },
+                { id: 'p3', source: 'prompt-instagram', target: 'llm-instagram', targetHandle: 'system-prompt', type: 'default' },
+                { id: 'p4', source: 'prompt-seo', target: 'llm-seo', targetHandle: 'system-prompt', type: 'default' },
 
-                // Connect Merger Output to Downstream LLMs
-                { id: 'e4', source: 'llm-merger', sourceHandle: 'response', target: 'text-seo', targetHandle: 'prompt', type: 'animatedEdge', animated: true },
-                { id: 'e5', source: 'llm-merger', sourceHandle: 'response', target: 'text-desc', targetHandle: 'prompt', type: 'animatedEdge', animated: true },
-                { id: 'e6', source: 'llm-merger', sourceHandle: 'response', target: 'text-social', targetHandle: 'prompt', type: 'animatedEdge', animated: true },
+                // Connect Merger Output to Downstream LLMs (Data Context)
+                { id: 'e4', source: 'llm-merger', sourceHandle: 'response', target: 'llm-amazon', targetHandle: 'prompt', type: 'animatedEdge', animated: true },
+                { id: 'e5', source: 'llm-merger', sourceHandle: 'response', target: 'llm-instagram', targetHandle: 'prompt', type: 'animatedEdge', animated: true },
+                { id: 'e6', source: 'llm-merger', sourceHandle: 'response', target: 'llm-seo', targetHandle: 'prompt', type: 'animatedEdge', animated: true },
             ];
 
             return { nodes, edges };
