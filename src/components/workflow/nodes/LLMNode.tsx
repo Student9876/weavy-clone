@@ -115,6 +115,21 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 					}
 				}
 
+				// Handle LLM Nodes (chaining) - connect to response output
+				if (sourceNode.type === "llmNode" && edge.targetHandle === "system-prompt") {
+					const outputs = (sourceNode.data as LLMNodeData).outputs;
+					if (outputs && outputs.length > 0) {
+						systemPrompt = outputs[outputs.length - 1].content || "";
+					}
+				}
+
+				if (sourceNode.type === "llmNode" && edge.targetHandle === "prompt") {
+					const outputs = (sourceNode.data as LLMNodeData).outputs;
+					if (outputs && outputs.length > 0) {
+						userPrompt = outputs[outputs.length - 1].content || "";
+					}
+				}
+
 				// Handle Image Nodes (connected to any image handle)
 				if (sourceNode.type === "imageNode" && edge.targetHandle?.startsWith("image")) {
 					const file = (sourceNode.data as ImageNodeData).file;
@@ -132,18 +147,36 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 				throw new Error("Input required: Connect a prompt or image");
 			}
 
-			// Combine prompts for API
-			let finalPrompt = userPrompt.trim();
-			if (systemPrompt.trim()) {
-				finalPrompt = `${systemPrompt.trim()}\n\n${finalPrompt}`;
-			}
-
-			// Call Gemini API
+			// Call API route with validated data
 			console.log("Using model:", data.model);
-			const result = await generateContent(data.model, finalPrompt, imageUrls);
 
-			if (!result.success) {
-				throw new Error(result.error || "Failed to generate content");
+			const response = await fetch("/api/llm/execute", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					model: data.model,
+					prompt: userPrompt,
+					systemPrompt: systemPrompt || undefined,
+					imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
+					temperature: 0.7,
+				}),
+			});
+
+			const result = await response.json();
+
+			if (!response.ok || !result.success) {
+				// Provide user-friendly error messages based on status code
+				let errorMessage = result.error || "Failed to generate content";
+
+				if (response.status === 503) {
+					errorMessage = "⏳ Model is busy. Retrying automatically...";
+				} else if (response.status === 429) {
+					errorMessage = "⏱️ Rate limit reached. Please wait a moment.";
+				}
+
+				throw new Error(errorMessage);
 			}
 
 			updateNodeData(id, {
