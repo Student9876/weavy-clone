@@ -8,14 +8,9 @@ import {getAllWorkflowsAction, deleteWorkflowAction, saveWorkflowAction} from "@
 import {DEMO_WORKFLOWS} from "@/lib/demoWorkflows";
 import Sidebar from "@/components/workflow/Sidebar";
 import SidebarNavigation from "@/components/workflow/SidebarNavigation";
+import type {Workflow} from '@/lib/types'
 
-// TypeScript interface for Workflow
-interface Workflow {
-	id: string;
-	name: string;
-	created_at: string;
-	updated_at: string;
-}
+
 
 export default function DashboardPage() {
 	const router = useRouter();

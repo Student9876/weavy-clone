@@ -33,9 +33,7 @@ export default function EditorPage() {
 
 			setLoading(true);
 
-			// ------------------------------------------------------------
-			// 🚀 NEW: Check for Demo Template
-			// ------------------------------------------------------------
+			//  Check for Demo Template
 			const demo = DEMO_WORKFLOWS.find((d) => d.id === workflowId);
 			if (demo) {
 				console.log("Loading Demo Template:", demo.name);
@@ -46,18 +44,16 @@ export default function EditorPage() {
 				useWorkflowStore.setState({
 					nodes: nodes,
 					edges: edges,
-					// IMPORTANT: Set ID to null so hitting "Save" creates a NEW entry
+					// Set ID to null so hitting "Save" creates a NEW entry
 					workflowId: null,
 					workflowName: demo.name, // Set the initial name from demo
 				});
 
 				setLoading(false);
-				return; // 🛑 Stop here, don't check DB
+				return; // Stop here, don't check DB
 			}
 
-			// ------------------------------------------------------------
 			// Existing Logic: Check "New" or Database
-			// ------------------------------------------------------------
 
 			// Check if it's "new" - create empty workflow
 			if (workflowId === "new") {

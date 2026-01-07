@@ -1,17 +1,6 @@
 import {ReactFlow, useNodesState, useEdgesState, Handle, Position, BaseEdge, EdgeProps, getBezierPath, Node} from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-
-interface HeroNodeData extends Record<string, unknown> {
-	type?: string;
-	label?: string;
-	image?: string;
-	text?: string;
-	gradientClass?: string;
-	width?: string;
-	height?: string;
-}
-
-type HeroNode = Node<HeroNodeData>;
+import type {HeroNode, HeroNodeData} from "@/lib/types";
 
 // --- 1. CUSTOM NODE ---
 const MarketingCardNode = ({data}: {data: HeroNodeData}) => {
@@ -180,13 +169,13 @@ export default function HeroWorkflow() {
 				edgeTypes={edgeTypes}
 				fitView
 				fitViewOptions={{padding: 0.1}}
-				panOnDrag={false}         // Prevent canvas dragging
-				panOnScroll={false}       // Prevent canvas dragging with scroll
+				panOnDrag={false} // Prevent canvas dragging
+				panOnScroll={false} // Prevent canvas dragging with scroll
 				zoomOnScroll={false}
 				zoomOnPinch={false}
 				zoomOnDoubleClick={false}
 				preventScrolling={false}
-				nodesDraggable={true}     // Allow nodes to be dragged
+				nodesDraggable={true} // Allow nodes to be dragged
 				nodesConnectable={false}
 				elementsSelectable={true}
 				proOptions={{hideAttribution: true}}

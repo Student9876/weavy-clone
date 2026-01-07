@@ -3,18 +3,14 @@
 import React, {useEffect, useState} from "react";
 import {useReactFlow} from "@xyflow/react";
 import {useStore} from "zustand";
-import {MousePointer2, Hand, Undo2, Redo2, ChevronDown, Minus, Plus} from "lucide-react";
+import {MousePointer2, Hand, Undo2, Redo2, Minus, Plus} from "lucide-react";
 import {useWorkflowStore} from "@/store/workflowStore";
 import {cn} from "@/lib/utils";
+import type {CanvasControlsProps} from "@/lib/types";
 
-// 1. FIX: Simply return the whole store API without an inline object selector
+
 // This prevents the infinite loop caused by unstable object references.
 const useTemporalStore = () => useStore(useWorkflowStore.temporal);
-
-interface CanvasControlsProps {
-	isHandMode: boolean;
-	toggleMode: (isHand: boolean) => void;
-}
 
 export default function CanvasControls({isHandMode, toggleMode}: CanvasControlsProps) {
 	const {fitView, zoomIn, zoomOut, getZoom} = useReactFlow();

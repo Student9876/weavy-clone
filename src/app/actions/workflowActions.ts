@@ -1,15 +1,8 @@
 "use server";
 
 import { query } from "@/lib/db";
-import { AppNode } from "@/lib/types";
-import { Edge } from "@xyflow/react";
+import type {SaveWorkflowParams} from "@/lib/types";
 
-type SaveWorkflowParams = {
-    id?: string | null;
-    name: string;
-    nodes: AppNode[];
-    edges: Edge[];
-};
 
 export async function saveWorkflowAction({ id, name, nodes, edges }: SaveWorkflowParams) {
     try {
@@ -37,7 +30,7 @@ export async function saveWorkflowAction({ id, name, nodes, edges }: SaveWorkflo
             return { success: true, id: result.rows[0].id };
         }
 
-    } catch (error: any) {
+    } catch (error) {
         console.error("❌ Database Error:", error);
         return { success: false, error: "Failed to save workflow." };
     }
@@ -57,7 +50,7 @@ export async function loadWorkflowAction(id: string) {
             data: result.rows[0].data,
             name: result.rows[0].name
         };
-    } catch (error: any) {
+    } catch (error) {
         console.error("❌ Load Error:", error);
         return { success: false, error: "Failed to load workflow." };
     }
@@ -76,7 +69,7 @@ export async function getAllWorkflowsAction() {
             success: true,
             workflows: result.rows
         };
-    } catch (error: any) {
+    } catch (error) {
         console.error("❌ Fetch Workflows Error:", error);
         return { success: false, error: "Failed to fetch workflows.", workflows: [] };
     }
@@ -92,7 +85,7 @@ export async function deleteWorkflowAction(id: string) {
         }
 
         return { success: true };
-    } catch (error: any) {
+    } catch (error) {
         console.error("❌ Delete Error:", error);
         return { success: false, error: "Failed to delete workflow." };
     }

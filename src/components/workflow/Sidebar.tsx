@@ -3,11 +3,7 @@
 import React, {useState} from "react";
 import {ChevronLeft, ChevronRight} from "lucide-react";
 import {cn} from "@/lib/utils";
-
-interface SidebarProps {
-	children: React.ReactNode;
-	defaultCollapsed?: boolean;
-}
+import type {SidebarProps} from "@/lib/types";
 
 const Sidebar = ({children, defaultCollapsed = false}: SidebarProps) => {
 	const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);

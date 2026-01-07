@@ -1,4 +1,4 @@
-import { Node } from "@xyflow/react";
+import { Node, Edge } from "@xyflow/react";
 
 // =========================================
 // 1. LANDING PAGE TYPES (Marketing)
@@ -85,3 +85,37 @@ export type LLMNodeType = Node<LLMNodeData, 'llmNode'>;
 // Union type for the Editor
 export type AppNodeData = TextNodeData | ImageNodeData | LLMNodeData;
 export type AppNode = Node<AppNodeData>;
+
+
+
+
+
+export type SaveWorkflowParams = {
+    id?: string | null;
+    name: string;
+    nodes: AppNode[];
+    edges: Edge[];
+};
+
+// TypeScript interface for Workflow
+export interface Workflow {
+    id: string;
+    name: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CanvasControlsProps {
+    isHandMode: boolean;
+    toggleMode: (isHand: boolean) => void;
+}
+
+export interface LoadWorkflowModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+}
+
+export interface SidebarProps {
+	children: React.ReactNode;
+	defaultCollapsed?: boolean;
+}

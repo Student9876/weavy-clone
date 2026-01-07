@@ -6,7 +6,6 @@ export default function Home() {
 	return (
 		<SmoothScroll>
 			<div className="min-h-screen flex flex-col bg-[#FBFBFB] selection:bg-yellow-200">
-				{/* Manually render Navbar here since we are outside (marketing) layout */}
 				<Navbar />
 				<main className="flex-1">
 					<LandingPage />

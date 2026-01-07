@@ -40,12 +40,10 @@ function FlowContent() {
     const {screenToFlowPosition} = useReactFlow();
     const {undo, redo} = useStore(useWorkflowStore.temporal);
 
-    // 🚀 NEW: UI State for Hand/Pan Mode
+    // UI State for Hand/Pan Mode
     const [isHandMode, setIsHandMode] = useState(false);
 
-    // ------------------------------------------------------------------
-    // 🔒 VALIDATION LOGIC
-    // ------------------------------------------------------------------
+    // VALIDATION LOGIC
     const isValidConnection = useCallback(
         (connection: Edge | Connection) => {
             if (connection.source === connection.target) return false;
