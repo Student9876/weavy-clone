@@ -91,15 +91,39 @@ export const DEMO_WORKFLOWS = [
             ];
 
             const edges: Edge[] = [
-                // Connect Images to Merger
+                // 1. Connect Images to Merger (Keep as is)
                 { id: 'e1', source: 'img-1', target: 'llm-merger', targetHandle: 'image-0', type: 'animatedEdge', animated: true },
                 { id: 'e2', source: 'img-2', target: 'llm-merger', targetHandle: 'image-1', type: 'animatedEdge', animated: true },
                 { id: 'e3', source: 'img-3', target: 'llm-merger', targetHandle: 'image-2', type: 'animatedEdge', animated: true },
 
-                // Connect Merger to Outputs
-                { id: 'e4', source: 'llm-merger', target: 'text-seo', targetHandle: 'system-prompt', type: 'animatedEdge', animated: true },
-                { id: 'e5', source: 'llm-merger', target: 'text-desc', targetHandle: 'system-prompt', type: 'animatedEdge', animated: true },
-                { id: 'e6', source: 'llm-merger', target: 'text-social', targetHandle: 'system-prompt', type: 'animatedEdge', animated: true },
+                // 2. Connect Merger to Outputs (🚀 FIX: Add sourceHandle: 'response')
+                {
+                    id: 'e4',
+                    source: 'llm-merger',
+                    sourceHandle: 'response', // 👈 Matches the ID we added in LLMNode
+                    target: 'text-seo',
+                    targetHandle: 'system-prompt',
+                    type: 'animatedEdge',
+                    animated: true
+                },
+                {
+                    id: 'e5',
+                    source: 'llm-merger',
+                    sourceHandle: 'response', // 👈 Added
+                    target: 'text-desc',
+                    targetHandle: 'system-prompt',
+                    type: 'animatedEdge',
+                    animated: true
+                },
+                {
+                    id: 'e6',
+                    source: 'llm-merger',
+                    sourceHandle: 'response', // 👈 Added
+                    target: 'text-social',
+                    targetHandle: 'system-prompt',
+                    type: 'animatedEdge',
+                    animated: true
+                },
             ];
 
             return { nodes, edges };

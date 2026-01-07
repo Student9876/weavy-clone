@@ -5,42 +5,42 @@ import { AppNode } from "@/lib/types";
 import { Edge } from "@xyflow/react";
 
 type SaveWorkflowParams = {
-  id?: string | null;
-  name: string;
-  nodes: AppNode[];
-  edges: Edge[];
+    id?: string | null;
+    name: string;
+    nodes: AppNode[];
+    edges: Edge[];
 };
 
 export async function saveWorkflowAction({ id, name, nodes, edges }: SaveWorkflowParams) {
-  try {
-    const workflowJson = JSON.stringify({ nodes, edges });
+    try {
+        const workflowJson = JSON.stringify({ nodes, edges });
 
-    if (id) {
-        console.log(`🔒 Updating Workflow ID: ${id}`);
-        const sql = `
+        if (id) {
+            console.log(`🔒 Updating Workflow ID: ${id}`);
+            const sql = `
             UPDATE workflows 
             SET data = $1, name = $2 
             WHERE id = $3 
             RETURNING id;
         `;
-        await query(sql, [workflowJson, name, id]);
-        return { success: true, id };
-        
-    } else {
-        console.log("🔒 Creating New Workflow");
-        const sql = `
+            await query(sql, [workflowJson, name, id]);
+            return { success: true, id };
+
+        } else {
+            console.log("🔒 Creating New Workflow");
+            const sql = `
             INSERT INTO workflows (name, data) 
             VALUES ($1, $2)
             RETURNING id;
         `;
-        const result = await query(sql, [name, workflowJson]);
-        return { success: true, id: result.rows[0].id };
-    }
+            const result = await query(sql, [name, workflowJson]);
+            return { success: true, id: result.rows[0].id };
+        }
 
-  } catch (error: any) {
-    console.error("❌ Database Error:", error);
-    return { success: false, error: "Failed to save workflow." };
-  }
+    } catch (error: any) {
+        console.error("❌ Database Error:", error);
+        return { success: false, error: "Failed to save workflow." };
+    }
 }
 
 export async function loadWorkflowAction(id: string) {
@@ -52,10 +52,10 @@ export async function loadWorkflowAction(id: string) {
             return { success: false, error: "Workflow not found" };
         }
 
-        return { 
-            success: true, 
+        return {
+            success: true,
             data: result.rows[0].data,
-            name: result.rows[0].name 
+            name: result.rows[0].name
         };
     } catch (error: any) {
         console.error("❌ Load Error:", error);
@@ -72,9 +72,9 @@ export async function getAllWorkflowsAction() {
         `;
         const result = await query(sql);
 
-        return { 
-            success: true, 
-            workflows: result.rows 
+        return {
+            success: true,
+            workflows: result.rows
         };
     } catch (error: any) {
         console.error("❌ Fetch Workflows Error:", error);

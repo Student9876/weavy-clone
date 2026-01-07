@@ -362,6 +362,24 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 					</div>
 				);
 			})}
+
+			{/* 🚀 NEW: Output Source Handle (Right Side) */}
+			<div className="absolute right-0 top-1/2 -translate-y-1/2">
+				<Handle
+					type="source"
+					position={Position.Right}
+					id="response"
+					isConnectable={isConnectable}
+					onMouseEnter={() => setHoveredHandle("response")}
+					onMouseLeave={() => setHoveredHandle(null)}
+					className="!w-3 !h-3 !bg-[#1a1a1a] !border-2 !border-[#dfff4f] hover:!bg-[#dfff4f] transition-colors"
+				/>
+				{hoveredHandle === "response" && (
+					<div className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/90 text-[#dfff4f] text-[10px] font-semibold px-2 py-1 rounded whitespace-nowrap z-50 pointer-events-none">
+						Response Output
+					</div>
+				)}
+			</div>
 		</div>
 	);
 }

@@ -9,6 +9,7 @@ import SidebarNodeList from "@/components/workflow/SidebarNodeList";
 import Header from "@/components/workflow/Header";
 import {useWorkflowStore} from "@/store/workflowStore";
 import {loadWorkflowAction} from "@/app/actions/workflowActions";
+import {DEMO_WORKFLOWS} from "@/lib/demoWorkflows";
 
 // 1. DYNAMIC IMPORT: Disables SSR for the Canvas
 // This replaces the need for useState/useEffect isMounted checks
@@ -32,12 +33,39 @@ export default function EditorPage() {
 
 			setLoading(true);
 
+			// ------------------------------------------------------------
+			// 🚀 NEW: Check for Demo Template
+			// ------------------------------------------------------------
+			const demo = DEMO_WORKFLOWS.find((d) => d.id === workflowId);
+			if (demo) {
+				console.log("Loading Demo Template:", demo.name);
+
+				// Get the graph data from the function
+				const {nodes, edges} = demo.getGraph();
+
+				useWorkflowStore.setState({
+					nodes: nodes,
+					edges: edges,
+					// IMPORTANT: Set ID to null so hitting "Save" creates a NEW entry
+					workflowId: null,
+					workflowName: demo.name, // Set the initial name from demo
+				});
+
+				setLoading(false);
+				return; // 🛑 Stop here, don't check DB
+			}
+
+			// ------------------------------------------------------------
+			// Existing Logic: Check "New" or Database
+			// ------------------------------------------------------------
+
 			// Check if it's "new" - create empty workflow
 			if (workflowId === "new") {
 				useWorkflowStore.setState({
 					nodes: [],
 					edges: [],
 					workflowId: null,
+					workflowName: "Untitled Workflow", // Reset name for new workflow
 				});
 				setLoading(false);
 				return;
@@ -48,12 +76,12 @@ export default function EditorPage() {
 				const res = await loadWorkflowAction(workflowId);
 				if (res.success && res.data) {
 					const flowData = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
-					// Load the workflow
+
 					useWorkflowStore.setState({
 						nodes: flowData.nodes || [],
 						edges: flowData.edges || [],
 						workflowId: workflowId,
-						workflowName: res.name || "Untitled Workflow", // Changed from res.data.name to res.name
+						workflowName: res.name || "Untitled Workflow",
 					});
 				} else {
 					// Workflow not found, start with empty state
@@ -62,6 +90,7 @@ export default function EditorPage() {
 						nodes: [],
 						edges: [],
 						workflowId: null,
+						workflowName: "Untitled Workflow",
 					});
 				}
 			} catch (error) {
@@ -71,6 +100,7 @@ export default function EditorPage() {
 					nodes: [],
 					edges: [],
 					workflowId: null,
+					workflowName: "Untitled Workflow",
 				});
 			} finally {
 				setLoading(false);
