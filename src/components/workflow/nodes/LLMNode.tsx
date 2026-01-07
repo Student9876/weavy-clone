@@ -90,60 +90,98 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 		try {
 			const allNodes = getNodes();
 			const allEdges = getEdges();
-			const targetEdges = allEdges.filter((edge) => edge.target === id);
+			const incomingEdges = allEdges.filter((edge) => edge.target === id);
 
-			console.log(`Found ${targetEdges.length} connections to this node`);
+			console.log(`Found ${incomingEdges.length} connections to this node`);
 
-			let systemPrompt = "";
-			let userPrompt = "";
+			let systemPromptBase = ""; // From text nodes connected to system-prompt
+			let userPromptBase = ""; // From text nodes connected to prompt
+			let incomingContext = ""; // From upstream LLM nodes
 			const imageUrls: string[] = [];
 
 			// Collect inputs based on handle IDs
-			targetEdges.forEach((edge) => {
+			for (const edge of incomingEdges) {
 				const sourceNode = allNodes.find((n) => n.id === edge.source);
-				if (!sourceNode) return;
+				if (!sourceNode) continue;
 
 				console.log(`Connected node type: ${sourceNode.type}, target handle: ${edge.targetHandle}`);
 
-				// Handle Text Nodes
+				// Handle Text Nodes (direct text input)
 				if (sourceNode.type === "textNode") {
 					const text = (sourceNode.data as TextNodeData).text;
 					if (edge.targetHandle === "system-prompt") {
-						systemPrompt = text || "";
+						systemPromptBase = text || "";
 					} else if (edge.targetHandle === "prompt") {
-						userPrompt = text || "";
+						userPromptBase = text || "";
 					}
 				}
 
-				// Handle LLM Nodes (chaining) - connect to response output
-				if (sourceNode.type === "llmNode" && edge.targetHandle === "system-prompt") {
+				// Handle LLM Nodes (chaining) - Accumulate context from upstream outputs
+				if (sourceNode.type === "llmNode") {
 					const outputs = (sourceNode.data as LLMNodeData).outputs;
 					if (outputs && outputs.length > 0) {
-						systemPrompt = outputs[outputs.length - 1].content || "";
-					}
-				}
-
-				if (sourceNode.type === "llmNode" && edge.targetHandle === "prompt") {
-					const outputs = (sourceNode.data as LLMNodeData).outputs;
-					if (outputs && outputs.length > 0) {
-						userPrompt = outputs[outputs.length - 1].content || "";
+						const lastOutput = outputs[outputs.length - 1].content || "";
+						const nodeLabel = (sourceNode.data as LLMNodeData).label || "Previous Step";
+						
+						if (edge.targetHandle === "system-prompt") {
+							// Add to context with label for clarity
+							incomingContext += `\n\n--- CONTEXT FROM: ${nodeLabel} ---\n${lastOutput}`;
+						} else if (edge.targetHandle === "prompt") {
+							// If connected to prompt handle, use as user prompt
+							userPromptBase = lastOutput;
+						}
 					}
 				}
 
 				// Handle Image Nodes (connected to any image handle)
 				if (sourceNode.type === "imageNode" && edge.targetHandle?.startsWith("image")) {
-					const file = (sourceNode.data as ImageNodeData).file;
-					if (file?.url) {
-						console.log("Found image:", file.name);
-						imageUrls.push(file.url);
+					const imageData = sourceNode.data as ImageNodeData;
+					
+					// Check both file.url (manual upload) and image (demo/preloaded)
+					const imageUrl = imageData.file?.url || imageData.image;
+					
+					if (imageUrl && typeof imageUrl === 'string') {
+						console.log("Found image:", imageData.file?.name || "image");
+						
+						// Check if it's already base64 or needs conversion
+						if (imageUrl.startsWith('data:')) {
+							// Already base64
+							imageUrls.push(imageUrl);
+						} else if (imageUrl.startsWith('/') || imageUrl.startsWith('http')) {
+							// Public URL - needs conversion
+							console.log("Converting URL to base64:", imageUrl);
+							try {
+								const base64 = await urlToBase64(imageUrl);
+								imageUrls.push(base64);
+							} catch (error) {
+								console.error("Failed to convert image:", error);
+								throw new Error(`Failed to load image: ${imageUrl}`);
+							}
+						} else {
+							imageUrls.push(imageUrl);
+						}
 					}
 				}
+			}
+
+			// Construct final prompts
+			// Combine system prompt base with incoming context from upstream nodes
+			let finalSystemPrompt = systemPromptBase;
+			if (incomingContext) {
+				finalSystemPrompt += incomingContext;
+			}
+
+			// Use user prompt or default trigger message
+			const finalUserPrompt = userPromptBase || "Process this request based on the system instructions and context.";
+
+			console.log("Final Inputs:", {
+				systemPrompt: finalSystemPrompt.substring(0, 100) + "...",
+				userPrompt: finalUserPrompt.substring(0, 100) + "...",
+				imageCount: imageUrls.length
 			});
 
-			console.log("Final Inputs:", {systemPrompt, userPrompt, imageCount: imageUrls.length});
-
-			// Validation
-			if (!userPrompt.trim() && imageUrls.length === 0) {
+			// Validation - require at least some input
+			if (!finalSystemPrompt.trim() && !finalUserPrompt.trim() && imageUrls.length === 0) {
 				throw new Error("Input required: Connect a prompt or image");
 			}
 
@@ -157,10 +195,10 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 				},
 				body: JSON.stringify({
 					model: data.model,
-					prompt: userPrompt,
-					systemPrompt: systemPrompt || undefined,
+					prompt: finalUserPrompt,
+					systemPrompt: finalSystemPrompt || undefined,
 					imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
-					temperature: 0.7,
+					temperature: data.temperature || 0.7,
 				}),
 			});
 
@@ -195,7 +233,7 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 			const errorMessage = error instanceof Error ? error.message : "Unknown error";
 			updateNodeData(id, {status: "error", errorMessage});
 		}
-	}, [id, updateNodeData, getNodes, getEdges, data.model]);
+	}, [id, updateNodeData, getNodes, getEdges, data.model, data.temperature]);
 
 	return (
 		<div
@@ -415,4 +453,21 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 			</div>
 		</div>
 	);
+}
+
+// Helper: Convert image URL to base64
+async function urlToBase64(url: string): Promise<string> {
+    try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    } catch (error) {
+        console.error("Failed to convert URL to base64:", error);
+        throw error;
+    }
 }

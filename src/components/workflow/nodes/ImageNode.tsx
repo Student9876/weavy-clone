@@ -4,7 +4,7 @@ import React, {useCallback, useRef, useState, useEffect} from "react";
 import {Handle, Position, NodeProps} from "@xyflow/react";
 import {ImageIcon, Upload, X, Loader2, AlertCircle, MoreHorizontal, Trash2} from "lucide-react";
 import {cn} from "@/lib/utils";
-import {ImageNodeType} from "@/lib/types";
+import {ImageNodeType} from "@/lib/types"; // Ensure this matches your types definition
 import {useWorkflowStore} from "@/store/workflowStore";
 
 export default function ImageNode({id, data, isConnectable, selected}: NodeProps<ImageNodeType>) {
@@ -14,6 +14,9 @@ export default function ImageNode({id, data, isConnectable, selected}: NodeProps
 
 	const [showMenu, setShowMenu] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
+
+	// 1. Resolve the Image Source (User Upload OR Demo Pre-load)
+	const imageSrc = (typeof data.file?.url === "string" && data.file.url) || (typeof data.image === "string" && data.image) || undefined;
 
 	// Close menu when clicking outside
 	useEffect(() => {
@@ -43,11 +46,8 @@ export default function ImageNode({id, data, isConnectable, selected}: NodeProps
 
 			try {
 				updateNodeData(id, {status: "loading"});
-
-				// 1. Convert to Base64
 				const base64String = await fileToBase64(file);
 
-				// 2. Update Store with the Base64 string
 				updateNodeData(id, {
 					file: {
 						url: base64String,
@@ -55,6 +55,8 @@ export default function ImageNode({id, data, isConnectable, selected}: NodeProps
 						type: file.type,
 					},
 					status: "success",
+					// Clear the demo image property if a user uploads manually
+					image: undefined,
 				});
 			} catch {
 				updateNodeData(id, {
@@ -66,11 +68,11 @@ export default function ImageNode({id, data, isConnectable, selected}: NodeProps
 		[id, updateNodeData]
 	);
 
-	// Handle Remove Image
 	const clearImage = useCallback(
 		(e: React.MouseEvent) => {
 			e.stopPropagation();
-			updateNodeData(id, {file: undefined, status: "idle"});
+			// Clear both file and image properties
+			updateNodeData(id, {file: undefined, image: undefined, status: "idle"});
 			if (fileInputRef.current) fileInputRef.current.value = "";
 		},
 		[id, updateNodeData]
@@ -87,10 +89,10 @@ export default function ImageNode({id, data, isConnectable, selected}: NodeProps
 			<div className="flex items-center justify-between px-3 py-2.5 border-b border-white/5 bg-[#111] rounded-t-xl">
 				<div className="flex items-center gap-2">
 					<ImageIcon size={14} className="text-white/50" />
-					<span className="text-xs font-semibold text-white/70">{data.label}</span>
+					<span className="text-xs font-semibold text-white/70">{data.label || "Image Input"}</span>
 				</div>
 
-				{/* Menu Button with Dropdown */}
+				{/* Menu Button */}
 				<div className="relative" ref={menuRef}>
 					<button
 						onClick={(e) => {
@@ -101,7 +103,6 @@ export default function ImageNode({id, data, isConnectable, selected}: NodeProps
 						<MoreHorizontal size={14} />
 					</button>
 
-					{/* Dropdown Menu */}
 					{showMenu && (
 						<div className="absolute right-0 top-6 w-32 bg-[#222] border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden">
 							<button
@@ -122,9 +123,10 @@ export default function ImageNode({id, data, isConnectable, selected}: NodeProps
 			<div className="p-3">
 				<input ref={fileInputRef} type="file" accept="image/*" onChange={onFileChange} className="hidden" id={`file-upload-${id}`} />
 
-				{data.file?.url ? (
+				{/* 2. Use the resolved imageSrc here */}
+				{imageSrc ? (
 					<div className="relative group">
-						<img src={data.file.url} alt={data.file.name || "Uploaded"} className="w-full h-40 object-cover rounded-lg border border-white/10" />
+						<img src={imageSrc} alt={data.file?.name || "Uploaded"} className="w-full h-40 object-cover rounded-lg border border-white/10" />
 
 						<button
 							onClick={clearImage}
@@ -132,7 +134,9 @@ export default function ImageNode({id, data, isConnectable, selected}: NodeProps
 							<X size={14} />
 						</button>
 
-						<div className="mt-2 text-[10px] text-white/40 truncate">{data.file.name}</div>
+						<div className="mt-2 text-[10px] text-white/40 truncate">
+							{data.file?.name || (data.image && typeof data.image === 'string' ? data.image.split('/').pop() : "image.png")}
+						</div>
 					</div>
 				) : (
 					<label
@@ -158,8 +162,16 @@ export default function ImageNode({id, data, isConnectable, selected}: NodeProps
 				)}
 			</div>
 
-			{/* Output Handle */}
-			<Handle type="source" position={Position.Right} id="output" isConnectable={isConnectable} className="!w-2.5 !h-2.5 !bg-purple-400" />
+			{/* 3. The Pin (Handle) - Restored and styled correctly */}
+			<div className="absolute -right-1.5 top-1/2 -translate-y-1/2 z-50">
+				<Handle
+					type="source"
+					position={Position.Right}
+					id="output"
+					isConnectable={isConnectable}
+					className="!w-3 !h-3 !bg-[#1a1a1a] !border-2 !border-purple-400 hover:!bg-purple-400 transition-colors"
+				/>
+			</div>
 		</div>
 	);
 }
