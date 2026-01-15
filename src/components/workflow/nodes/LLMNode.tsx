@@ -6,9 +6,10 @@ import {Bot, Plus, Loader2, MoreHorizontal, Settings2, Copy, Check, Trash2, X} f
 import {cn} from "@/lib/utils";
 import type {LLMNodeData, LLMNodeType, TextNodeData, ImageNodeData} from "@/lib/types";
 import {useWorkflowStore} from "@/store/workflowStore";
-import {generateContent} from "@/app/actions/gemini";
+import {useAuth} from "@clerk/nextjs";
 
 export default function LLMNode({id, data, isConnectable, selected}: NodeProps<LLMNodeType>) {
+	const {userId} = useAuth();
 	// Use individual selectors to avoid infinite loop
 	const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
 	const deleteNode = useWorkflowStore((state) => state.deleteNode);
@@ -24,7 +25,7 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 	// Get imageHandleCount from node data (persisted), default to 1 if not set
 	const imageHandleCount = data.imageHandleCount ?? 1;
 
-	// KEY FIX: Update node internals when handle count changes
+	// Update node internals when handle count changes
 	useEffect(() => {
 		updateNodeInternals(id);
 	}, [id, imageHandleCount, updateNodeInternals]);
@@ -84,6 +85,12 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 	);
 
 	const handleRun = useCallback(async () => {
+		// Auth check
+		if (!userId) {
+			updateNodeData(id, {status: "error", errorMessage: "You must be signed in to run the model."});
+			return;
+		}
+
 		updateNodeData(id, {status: "loading", errorMessage: undefined});
 		console.log("--- RUN STARTED ---");
 
@@ -122,7 +129,7 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 					if (outputs && outputs.length > 0) {
 						const lastOutput = outputs[outputs.length - 1].content || "";
 						const nodeLabel = (sourceNode.data as LLMNodeData).label || "Previous Step";
-						
+
 						if (edge.targetHandle === "system-prompt") {
 							// Add to context with label for clarity
 							incomingContext += `\n\n--- CONTEXT FROM: ${nodeLabel} ---\n${lastOutput}`;
@@ -136,18 +143,18 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 				// Handle Image Nodes (connected to any image handle)
 				if (sourceNode.type === "imageNode" && edge.targetHandle?.startsWith("image")) {
 					const imageData = sourceNode.data as ImageNodeData;
-					
+
 					// Check both file.url (manual upload) and image (demo/preloaded)
 					const imageUrl = imageData.file?.url || imageData.image;
-					
-					if (imageUrl && typeof imageUrl === 'string') {
+
+					if (imageUrl && typeof imageUrl === "string") {
 						console.log("Found image:", imageData.file?.name || "image");
-						
+
 						// Check if it's already base64 or needs conversion
-						if (imageUrl.startsWith('data:')) {
+						if (imageUrl.startsWith("data:")) {
 							// Already base64
 							imageUrls.push(imageUrl);
-						} else if (imageUrl.startsWith('/') || imageUrl.startsWith('http')) {
+						} else if (imageUrl.startsWith("/") || imageUrl.startsWith("http")) {
 							// Public URL - needs conversion
 							console.log("Converting URL to base64:", imageUrl);
 							try {
@@ -177,7 +184,7 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 			console.log("Final Inputs:", {
 				systemPrompt: finalSystemPrompt.substring(0, 100) + "...",
 				userPrompt: finalUserPrompt.substring(0, 100) + "...",
-				imageCount: imageUrls.length
+				imageCount: imageUrls.length,
 			});
 
 			// Validation - require at least some input
@@ -199,6 +206,7 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 					systemPrompt: finalSystemPrompt || undefined,
 					imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
 					temperature: data.temperature || 0.7,
+					userId: userId,
 				}),
 			});
 
@@ -209,9 +217,9 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 				let errorMessage = result.error || "Failed to generate content";
 
 				if (response.status === 503) {
-					errorMessage = "⏳ Model is busy. Retrying automatically...";
+					errorMessage = "Model is busy. Retrying automatically...";
 				} else if (response.status === 429) {
-					errorMessage = "⏱️ Rate limit reached. Please wait a moment.";
+					errorMessage = "Rate limit reached. Please wait a moment.";
 				}
 
 				throw new Error(errorMessage);
@@ -457,17 +465,17 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 
 // Helper: Convert image URL to base64
 async function urlToBase64(url: string): Promise<string> {
-    try {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
-    } catch (error) {
-        console.error("Failed to convert URL to base64:", error);
-        throw error;
-    }
+	try {
+		const response = await fetch(url);
+		const blob = await response.blob();
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onloadend = () => resolve(reader.result as string);
+			reader.onerror = reject;
+			reader.readAsDataURL(blob);
+		});
+	} catch (error) {
+		console.error("Failed to convert URL to base64:", error);
+		throw error;
+	}
 }

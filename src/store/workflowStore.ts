@@ -17,11 +17,15 @@ import {
 import { AppNode } from '@/lib/types';
 
 type WorkflowState = {
+    userId: string | null;
     nodes: AppNode[];
     edges: Edge[];
     workflowId: string | null;
     workflowName: string;
+
+
     // Actions
+    setUserId: (userId: string | null) => void;
     onNodesChange: OnNodesChange;
     onEdgesChange: OnEdgesChange;
     onConnect: OnConnect;
@@ -31,6 +35,7 @@ type WorkflowState = {
     deleteNode: (id: string) => void;
     setWorkflowId: (id: string) => void;
     setWorkflowName: (name: string) => void;
+    clearUserData: () => void;
 };
 
 // Initial Data - Empty canvas
@@ -41,10 +46,28 @@ export const useWorkflowStore = create<WorkflowState>()(
     temporal(
         persist(
             (set, get) => ({
+                userId: null,
                 workflowId: null,
                 nodes: initialNodesData,
                 edges: initialEdges,
                 workflowName: "Untitled Workflow",
+
+                setUserId: (userId: string | null) => {
+                    const currentUserId = get().userId;
+
+                    // If switching users, clear the workflow data
+                    if (currentUserId !== userId) {
+                        set({
+                            userId,
+                            nodes: initialNodesData,
+                            edges: initialEdges,
+                            workflowId: null,
+                            workflowName: "Untitled Workflow",
+                        });
+                    } else {
+                        set({ userId });
+                    }
+                },
 
                 onNodesChange: (changes: NodeChange[]) => {
                     set({
@@ -87,7 +110,12 @@ export const useWorkflowStore = create<WorkflowState>()(
                 },
 
                 resetWorkflow: () => {
-                    set({ nodes: initialNodesData, edges: initialEdges });
+                    set({
+                        nodes: initialNodesData,
+                        edges: initialEdges,
+                        workflowId: null,
+                        workflowName: "Untitled Workflow",
+                    });
                 },
 
                 addNode: (node: AppNode) => {
@@ -110,28 +138,79 @@ export const useWorkflowStore = create<WorkflowState>()(
                 setWorkflowName: (name: string) => {
                     set({ workflowName: name });
                 },
+
+                clearUserData: () => {
+                    set({
+                        userId: null,
+                        nodes: initialNodesData,
+                        edges: initialEdges,
+                        workflowId: null,
+                        workflowName: "Untitled Workflow",
+                    });
+                },
             }),
             {
                 name: 'workflow-storage',
-                storage: createJSONStorage(() => localStorage),
-                version: 3, // Incremented to clear old cached nodes
+                version: 4, // Incremented to clear old cached nodes
 
-                migrate: (persistedState, version) => {
-                    if (version !== 3) {
+                // Partition storage by user ID
+                partialize: (state) => ({
+                    userId: state.userId,
+                    nodes: state.nodes,
+                    edges: state.edges,
+                    workflowId: state.workflowId,
+                    workflowName: state.workflowName,
+                }),
+
+                migrate: (persistedState: any, version: number) => {
+                    if (version < 4) {
+                        // Clear old data when migrating
                         return {
+                            userId: null,
                             nodes: initialNodesData,
                             edges: initialEdges,
-                        } as unknown as WorkflowState;
+                            workflowId: null,
+                            workflowName: "Untitled Workflow",
+                        } as WorkflowState;
                     }
                     return persistedState as WorkflowState;
+                },
+
+                // Use dynamic storage key based on user ID
+                storage: {
+                    getItem: (name: string) => {
+                        const str = localStorage.getItem(name);
+                        if (!str) return null;
+                        const { state } = JSON.parse(str);
+                        return state;
+                    },
+                    setItem: (name: string, value: any) => {
+                        const userId = value.userId;
+                        // Store with user-specific key if user is logged in
+                        const key = userId ? `${name}-${userId}` : name;
+                        localStorage.setItem(
+                            key,
+                            JSON.stringify({
+                                state: value,
+                                version: 4,
+                            })
+                        );
+                    },
+                    removeItem: (name: string) => {
+                        // Remove both generic and user-specific keys
+                        localStorage.removeItem(name);
+                        const keys = Object.keys(localStorage);
+                        keys.forEach(key => {
+                            if (key.startsWith(name)) {
+                                localStorage.removeItem(key);
+                            }
+                        });
+                    },
                 },
             }
         ),
         {
-            // Keep last 100 states
             limit: 100,
-            // This ensures we ONLY track data, not functions/actions.
-            // Without this, Zundo tries to restore functions which corrupts the store.
             partialize: (state) => {
                 const { nodes, edges, workflowId } = state;
                 return { nodes, edges, workflowId };
