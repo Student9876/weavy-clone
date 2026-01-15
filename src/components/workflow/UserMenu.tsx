@@ -45,7 +45,7 @@ export default function UserMenu({isCollapsed}: UserMenuProps) {
 		await signOut();
 
 		// Redirect to home page
-		router.push("/");
+		router.push("/sign-in");
 	};
 
 	if (!user) {
