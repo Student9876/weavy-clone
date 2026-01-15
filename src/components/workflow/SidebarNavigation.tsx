@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import {Folder, Plus, Users, AppWindow, MessageCircle} from "lucide-react";
 import {cn} from "@/lib/utils";
+import UserMenu from "./UserMenu";
 
 interface SidebarNavigationProps {
 	isCollapsed?: boolean;
@@ -16,17 +17,7 @@ const SidebarNavigation = ({isCollapsed, onCreateNew, creating = false}: Sidebar
 		<>
 			{/* User / Workspace */}
 			<div className="p-4 border-b border-white/10">
-				{!isCollapsed ? (
-					<button className="flex items-center gap-2 w-full px-3 py-2 rounded-lg hover:bg-white/5 transition-colors">
-						<div className="w-6 h-6 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500"></div>
-						<span className="font-semibold text-sm">DIVINE ZEON</span>
-						<ChevronDown size={14} className="text-white/50 ml-auto" />
-					</button>
-				) : (
-					<div className="flex justify-center py-2">
-						<div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500"></div>
-					</div>
-				)}
+				<UserMenu isCollapsed={isCollapsed} />
 			</div>
 
 			{/* Create New Button */}
@@ -110,24 +101,6 @@ const SidebarNavigation = ({isCollapsed, onCreateNew, creating = false}: Sidebar
 };
 
 // Helper Components
-function ChevronDown({size, className}: {size?: number; className?: string}) {
-	return (
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			width={size || 24}
-			height={size || 24}
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="2"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			className={className}>
-			<path d="m6 9 6 6 6-6" />
-		</svg>
-	);
-}
-
 function Loader2({size, className}: {size?: number; className?: string}) {
 	return (
 		<svg
