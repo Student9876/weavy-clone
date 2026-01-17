@@ -11,6 +11,7 @@
   "dependencies": {
     "@clerk/nextjs": "^6.36.7",
     "@google/generative-ai": "^0.24.1",
+    "@prisma/client": "^7.2.0",
     "@types/uuid": "^10.0.0",
     "@xyflow/react": "^12.10.0",
     "clsx": "^2.1.1",
@@ -35,8 +36,10 @@
     "@types/pg": "^8.16.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.2.3",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
+    "prisma": "^7.2.0",
     "sass": "^1.97.1",
     "tailwindcss": "^4",
     "typescript": "^5"
