@@ -8,15 +8,13 @@ export async function getWorkflowHistoryAction(workflowId: string) {
         const { userId } = await auth();
         if (!userId) return { success: false, error: "Unauthorized" };
 
-        // 👇 DEBUG LOGS: Check the Server Console when you open the sidebar
-        console.log(`🔍 Fetching History for Workflow: ${workflowId}`);
-        console.log(`👤 User ID: ${userId}`);
+        const numericId = parseInt(workflowId);
+        if (isNaN(numericId)) return { success: false, error: "Invalid Workflow ID" };
 
-        // Fetch the runs with their detailed node executions
+        // Fetch runs with detailed node executions
         const runs = await prisma.workflowRun.findMany({
             where: {
-                workflowId: parseInt(workflowId),
-                // workflow: { userId }, // Comment this out temporarily to debug ownership issues
+                workflowId: numericId,
             },
             include: {
                 nodeExecutions: {
@@ -24,10 +22,10 @@ export async function getWorkflowHistoryAction(workflowId: string) {
                 },
             },
             orderBy: { startedAt: "desc" },
+            take: 20, // Limit to last 20 runs to keep it fast
         });
 
-        console.log(`✅ Found ${runs.length} runs in the database.`);
-
+        // Format for Frontend
         const formattedRuns = runs.map((run) => ({
             id: run.id,
             status: run.status,
@@ -39,7 +37,7 @@ export async function getWorkflowHistoryAction(workflowId: string) {
                 : "...",
             nodes: run.nodeExecutions.map((node) => ({
                 id: node.id,
-                nodeId: node.nodeId,
+                nodeId: node.nodeId, // The React Flow Node ID
                 type: node.nodeType,
                 status: node.status,
                 input: node.inputData,

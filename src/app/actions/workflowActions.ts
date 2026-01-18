@@ -37,7 +37,7 @@ export async function saveWorkflowAction({ id, name, nodes, edges }: SaveWorkflo
 
         await ensureUserExists(userId);
 
-        // FIX: Prepare JSON data
+        // Prepare JSON data
         // We cast to 'any' because Prisma's InputJsonValue is stricter than 
         // our complex Node types, even though they are valid JSON at runtime.
         const workflowData = { nodes, edges };
@@ -56,7 +56,7 @@ export async function saveWorkflowAction({ id, name, nodes, edges }: SaveWorkflo
                 },
                 data: {
                     name,
-                    data: workflowData as any, // 👈 THE FIX: Cast to any
+                    data: workflowData as any,
                 },
             });
 
@@ -191,7 +191,7 @@ export async function deleteWorkflowAction(id: string) {
 // RUN ACTION (Trigger.dev)
 // ------------------------------------------------------------------
 export async function runWorkflowAction(workflowId: string) {
-    console.log(`[Action] Attempting to run workflow: "${workflowId}"`); // 🔍 DEBUG LOG
+    console.log(`[Action] Attempting to run workflow: "${workflowId}"`);
 
     try {
         const { userId } = await auth();
@@ -218,7 +218,7 @@ export async function runWorkflowAction(workflowId: string) {
             },
         });
 
-        console.log(`[Action] ✅ Run Created! Run ID: ${run.id}`);
+        console.log(`[Action] Run Created! Run ID: ${run.id}`);
 
         // 3. Trigger the Task
         console.log(`[Action] Triggering Orchestrator...`);
@@ -229,7 +229,7 @@ export async function runWorkflowAction(workflowId: string) {
         return { success: true, runId: run.id };
 
     } catch (error) {
-        console.error("[Action] ❌ CRITICAL FAILURE:", error); // 👈 This will show the real error
+        console.error("[Action] CRITICAL FAILURE:", error); // This will show the real error
         return { success: false, error: "Failed to run workflow. Check server logs." };
     }
 }

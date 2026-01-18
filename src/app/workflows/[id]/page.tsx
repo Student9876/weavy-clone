@@ -26,6 +26,9 @@ export default function EditorPage() {
 	const {setWorkflowId} = useWorkflowStore();
 	const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
+	// 👇 Add this state for sidebar toggle
+	const [isSidebarOpen, setSidebarOpen] = useState(true);
+
 	useEffect(() => {
 		async function initializeWorkflow() {
 			if (!workflowId) {
@@ -73,7 +76,7 @@ export default function EditorPage() {
 			try {
 				const res = await loadWorkflowAction(workflowId);
 
-				// FIX: Cast 'res' to any to bypass the "Property does not exist on type never" error
+				// Cast 'res' to any to bypass the "Property does not exist on type never" error
 				// This is necessary because TS struggles with the Discriminated Union from the Server Action
 				if ((res as any).success) {
 					const rawData = (res as any).data;
@@ -136,20 +139,20 @@ export default function EditorPage() {
 					<SidebarNodeList />
 				</Sidebar>
 
-				<main className="flex-1 relative h-full">
+				<main className="flex h-screen w-full bg-[#0a0a0a] relative overflow-hidden">
 					<FlowEditor />
 
-					{/* Floating Toggle Button (Temporary, usually goes in Header) */}
+					{/* Sidebar Toggle Button */}
 					<button
-						onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+						onClick={() => setSidebarOpen((open) => !open)}
 						className="absolute top-4 right-4 z-10 bg-black/50 border border-white/20 text-white p-2 rounded hover:bg-white/10 transition-colors"
-						title="View History">
+						title={isSidebarOpen ? "Hide History" : "Show History"}>
 						<Clock size={20} />
 					</button>
-				</main>
 
-				{/* The History Sidebar */}
-				<HistorySidebar workflowId={workflowId} isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} />
+					{/* Render Sidebar */}
+					{isSidebarOpen && <HistorySidebar workflowId={workflowId} isOpen={true} onClose={() => setSidebarOpen(false)} />}
+				</main>
 			</div>
 		</div>
 	);

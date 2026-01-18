@@ -8,7 +8,6 @@ import {useWorkflowStore} from "@/store/workflowStore";
 import {cn} from "@/lib/utils";
 import type {CanvasControlsProps} from "@/lib/types";
 
-
 // This prevents the infinite loop caused by unstable object references.
 const useTemporalStore = () => useStore(useWorkflowStore.temporal);
 
@@ -16,7 +15,7 @@ export default function CanvasControls({isHandMode, toggleMode}: CanvasControlsP
 	const {fitView, zoomIn, zoomOut, getZoom} = useReactFlow();
 	const [zoomLevel, setZoomLevel] = useState(100);
 
-	// 2. FIX: Access properties directly from the returned state
+	// Access properties directly from the returned state
 	const {undo, redo, pastStates, futureStates} = useTemporalStore();
 
 	useEffect(() => {
@@ -28,14 +27,14 @@ export default function CanvasControls({isHandMode, toggleMode}: CanvasControlsP
 	}, [getZoom]);
 
 	return (
-		<div className="flex items-center gap-1 p-1.5 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl backdrop-blur-md">
+		<div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 p-1.5 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl backdrop-blur-md">
 			{/* --- INTERACTION MODES --- */}
 			<div className="flex items-center bg-[#252525] rounded-lg p-0.5">
 				<button
 					onClick={() => toggleMode(false)}
 					className={cn(
 						"p-1.5 rounded-md transition-all",
-						!isHandMode ? "bg-[#dfff4f] text-black shadow-sm" : "text-white/50 hover:text-white hover:bg-white/10"
+						!isHandMode ? "bg-[#dfff4f] text-black shadow-sm" : "text-white/50 hover:text-white hover:bg-white/10",
 					)}
 					title="Selection Mode (V)">
 					<MousePointer2 size={16} fill={!isHandMode ? "currentColor" : "none"} />
@@ -44,7 +43,7 @@ export default function CanvasControls({isHandMode, toggleMode}: CanvasControlsP
 					onClick={() => toggleMode(true)}
 					className={cn(
 						"p-1.5 rounded-md transition-all",
-						isHandMode ? "bg-[#dfff4f] text-black shadow-sm" : "text-white/50 hover:text-white hover:bg-white/10"
+						isHandMode ? "bg-[#dfff4f] text-black shadow-sm" : "text-white/50 hover:text-white hover:bg-white/10",
 					)}
 					title="Pan Mode (H)">
 					<Hand size={16} />

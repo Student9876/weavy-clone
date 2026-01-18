@@ -1,7 +1,7 @@
 "use client";
 
 import React, {useState, useCallback} from "react";
-import {Save, Loader2, Share2, FolderOpen} from "lucide-react";
+import {Save, Loader2, Share2, FolderOpen, Play} from "lucide-react";
 import {useWorkflowStore} from "@/store/workflowStore";
 import {saveWorkflowAction, runWorkflowAction} from "@/app/actions/workflowActions";
 import LoadWorkflowModal from "./LoadWorkflowModal";
@@ -9,14 +9,15 @@ import LoadWorkflowModal from "./LoadWorkflowModal";
 export default function Header() {
 	const {nodes, edges, workflowId, workflowName, setWorkflowId, setWorkflowName} = useWorkflowStore();
 	const [isSaving, setIsSaving] = useState(false);
+	const [isRunning, setIsRunning] = useState(false); // 👈 Added state for running
 	const [isLoadOpen, setIsLoadOpen] = useState(false);
 	const [isEditingName, setIsEditingName] = useState(false);
 
-	// --- HANDLE SAVE (Existing Logic) ---
+	// --- HANDLE SAVE ---
 	const handleSave = async () => {
 		if (nodes.length === 0) {
 			alert("Canvas is empty!");
-			return;
+			return null;
 		}
 
 		setIsSaving(true);
@@ -30,57 +31,69 @@ export default function Header() {
 			});
 
 			if (res.success && res.id) {
-				setWorkflowId(res.id); // 👈 Critical: Update store with new ID
-				alert(`Saved! (ID: ${res.id})`);
+				setWorkflowId(res.id);
+				// Optional: Toast notification here
 				return res.id;
 			} else if (res.success) {
 				alert("Saved, but no ID returned.");
+				return null;
 			} else {
 				alert(`Error: ${res.error}`);
+				return null;
 			}
 		} catch (error) {
 			console.error(error);
+			return null;
 		} finally {
 			setIsSaving(false);
 		}
 	};
 
-	// --- HANDLE RUN (New Logic) ---
+	// --- HANDLE RUN ---
 	const handleRun = async () => {
+		setIsRunning(true);
 		let currentId = workflowId;
 
-		// 1. IF NEW FILE: Force Save First
-		if (!currentId || currentId === "new") {
-			console.log("New file detected. Saving first...");
-			const savedId = await handleSave();
-			if (!savedId) return; // Stop if save failed
-			currentId = savedId;
-		}
+		// 1. Force Save First to ensure DB has latest graph
+		const savedId = await handleSave();
 
-		// 2. NOW Run with the valid ID
+		// If save failed, abort run
+		if (!savedId) {
+			setIsRunning(false);
+			return;
+		}
+		currentId = savedId;
+
+		// 2. Run the workflow on the server
 		console.log("Running workflow with ID:", currentId);
 
 		try {
 			const res = await runWorkflowAction(currentId);
 			if (res.success) {
-				// It worked!
-				alert(`Workflow run started! Run ID: ${res.runId}`);
+				console.log(`Workflow run started! Run ID: ${res.runId}`);
+			
+				if (typeof res.runId === "string") {
+					localStorage.setItem("lastRunId", res.runId);
+				}
+
 			} else {
 				alert("Run Failed: " + res.error);
 			}
 		} catch (err) {
+			console.error(err);
 			alert("Error starting run");
+		} finally {
+			setIsRunning(false);
 		}
 	};
 
-	// --- HANDLE SHARE (Export as JSON) ---
+	// --- HANDLE SHARE ---
 	const handleShare = useCallback(() => {
 		if (nodes.length === 0) {
 			alert("Nothing to share! The canvas is empty.");
 			return;
 		}
 
-		// 1. Create the JSON object
 		const workflowData = {
 			name: workflowName,
 			nodes: nodes,
@@ -89,22 +102,14 @@ export default function Header() {
 			exportedAt: new Date().toISOString(),
 		};
 
-		// 2. Convert to string
-		const jsonString = JSON.stringify(workflowData, null, 2); // Pretty print with 2 spaces
-
-		// 3. Create a Blob (a file-like object)
+		const jsonString = JSON.stringify(workflowData, null, 2);
 		const blob = new Blob([jsonString], {type: "application/json"});
-
-		// 4. Create a temporary download link
 		const url = URL.createObjectURL(blob);
 		const link = document.createElement("a");
 		link.href = url;
-
-		// 5. Set filename (e.g., "My_First_Weavy.json")
 		const filename = workflowName.replace(/[^a-z0-9]/gi, "_").toLowerCase() || "workflow";
 		link.download = `${filename}.json`;
 
-		// 6. Trigger download and cleanup
 		document.body.appendChild(link);
 		link.click();
 		document.body.removeChild(link);
@@ -165,10 +170,19 @@ export default function Header() {
 					{/* Save Button */}
 					<button
 						onClick={handleSave}
-						disabled={isSaving}
-						className="flex items-center gap-2 px-4 py-2 bg-[#dfff4f] text-black text-xs font-bold rounded-lg hover:bg-white transition-all disabled:opacity-50 hover:scale-105 active:scale-95">
+						disabled={isSaving || isRunning}
+						className="flex items-center gap-2 px-4 py-2 bg-[#222] border border-white/10 text-white text-xs font-bold rounded-lg hover:bg-white/10 transition-all disabled:opacity-50">
 						{isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-						{isSaving ? "SAVING..." : "SAVE"}
+						SAVE
+					</button>
+
+					{/* 👇 RUN BUTTON RESTORED */}
+					<button
+						onClick={handleRun}
+						disabled={isSaving || isRunning}
+						className="flex items-center gap-2 px-4 py-2 bg-[#dfff4f] text-black text-xs font-bold rounded-lg hover:bg-white transition-all disabled:opacity-50 hover:scale-105 active:scale-95 shadow-[0_0_10px_rgba(223,255,79,0.2)]">
+						{isRunning ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} fill="currentColor" />}
+						{isRunning ? "RUNNING..." : "RUN"}
 					</button>
 				</div>
 			</header>

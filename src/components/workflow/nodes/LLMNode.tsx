@@ -21,6 +21,7 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 	const [copied, setCopied] = useState(false);
 	const [showMenu, setShowMenu] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
+	const [model, setModel] = useState<string>(data.model || "gemini-1.5-flash");
 
 	// Get imageHandleCount from node data (persisted), default to 1 if not set
 	const imageHandleCount = data.imageHandleCount ?? 1;
@@ -45,7 +46,7 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 		(e: React.ChangeEvent<HTMLSelectElement>) => {
 			updateNodeData(id, {model: e.target.value as LLMNodeData["model"]});
 		},
-		[id, updateNodeData]
+		[id, updateNodeData],
 	);
 
 	const handleCopy = useCallback(async () => {
@@ -75,19 +76,19 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 					// Remove edges connected to handles >= the new count
 					const handleIndex = parseInt(edge.targetHandle.split("-")[1]);
 					return handleIndex < imageHandleCount - 1;
-				})
+				}),
 			);
 
 			// Decrement the count
 			updateNodeData(id, {imageHandleCount: imageHandleCount - 1});
 		},
-		[imageHandleCount, id, updateNodeData, setEdges]
+		[imageHandleCount, id, updateNodeData, setEdges],
 	);
 
+	// 👇 UPDATED HANDLE RUN FUNCTION
 	const handleRun = useCallback(async () => {
-		// Auth check
 		if (!userId) {
-			updateNodeData(id, {status: "error", errorMessage: "You must be signed in to run the model."});
+			updateNodeData(id, {status: "error", errorMessage: "You must be signed in."});
 			return;
 		}
 
@@ -212,17 +213,38 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 
 			const result = await response.json();
 
-			if (!response.ok || !result.success) {
-				// Provide user-friendly error messages based on status code
-				let errorMessage = result.error || "Failed to generate content";
+			if (!response.ok || result.success === false) {
+				throw new Error(result.error || "Failed to generate content");
+			}
 
-				if (response.status === 503) {
-					errorMessage = "Model is busy. Retrying automatically...";
-				} else if (response.status === 429) {
-					errorMessage = "Rate limit reached. Please wait a moment.";
+			// 👇 CRITICAL FIX: Extract clean text from raw object
+			let finalContent = "No output.";
+
+			// Scenario 1: Clean text response
+			if (typeof result.text === "string") {
+				finalContent = result.text;
+			}
+			// Scenario 2: Nested output (Trigger.dev object)
+			else if (result.output && typeof result.output.text === "string") {
+				finalContent = result.output.text;
+			}
+			// Scenario 3: The "Bogus" Object you saw
+			else if (result.output && result.output.output && result.output.output.text) {
+				finalContent = result.output.output.text;
+			}
+			// Fallback: If it's still an object, try to find a 'text' key anywhere
+			else if (typeof result === "object") {
+				finalContent = result.text || result.output?.text || JSON.stringify(result, null, 2);
+			}
+
+			// Double-check for double-encoded JSON strings (common with AI)
+			try {
+				if (typeof finalContent === "string" && (finalContent.startsWith("{") || finalContent.startsWith('"'))) {
+					const parsed = JSON.parse(finalContent);
+					if (parsed.text) finalContent = parsed.text;
 				}
-
-				throw new Error(errorMessage);
+			} catch (e) {
+				// Not JSON, keep as is
 			}
 
 			updateNodeData(id, {
@@ -231,24 +253,28 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 					{
 						id: crypto.randomUUID(),
 						type: "text",
-						content: result.text || "No response.",
+						content: finalContent, // 👈 Clean text
 						timestamp: Date.now(),
 					},
 				],
 			});
-		} catch (error: unknown) {
+		} catch (error: any) {
 			console.error("Run Failed:", error);
-			const errorMessage = error instanceof Error ? error.message : "Unknown error";
-			updateNodeData(id, {status: "error", errorMessage});
+			updateNodeData(id, {status: "error", errorMessage: error.message || "Unknown error"});
 		}
-	}, [id, updateNodeData, getNodes, getEdges, data.model, data.temperature]);
+	}, [id, updateNodeData, getNodes, getEdges, data.model, data.temperature, userId]);
+
+	const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+		setModel(e.target.value);
+		updateNodeData(id, {model: e.target.value});
+	};
 
 	return (
 		<div
 			className={cn(
 				"rounded-xl border bg-[#1a1a1a] min-w-[320px] max-w-[400px] shadow-2xl transition-all duration-200 flex flex-col max-h-[600px]",
 				selected ? "border-[#dfff4f] ring-1 ring-[#dfff4f]/50" : "border-white/10 hover:border-white/30",
-				data.status === "error" && "border-red-500 ring-1 ring-red-500/50"
+				data.status === "error" && "border-red-500 ring-1 ring-red-500/50",
 			)}>
 			{/* Header */}
 			<div className="flex items-center justify-between px-3 py-2.5 border-b border-white/5 bg-[#111] rounded-t-xl">
@@ -285,21 +311,17 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 			</div>
 
 			{/* Body */}
-			<div className="p-6 space-y-3">
+			<div className="p-4">
 				{/* Model Selection */}
-				<div className="space-y-1.5">
-					<label className="text-[10px] text-white/50 uppercase font-semibold flex items-center gap-1.5">
-						<Settings2 size={10} /> Model Configuration
-					</label>
-					<select
-						value={data.model}
-						onChange={onModelChange}
-						className="w-full bg-[#0a0a0a] text-xs text-white rounded-lg border border-white/10 p-2 focus:outline-none focus:border-[#dfff4f]/50 cursor-pointer">
-						<option value="gemini-1.5-flash-latest">Gemini 1.5 Flash (Fast)</option>
-						<option value="gemini-1.5-pro-latest">Gemini 1.5 Pro (Powerful)</option>
-						<option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-					</select>
-				</div>
+				<label className="block text-xs text-white/60 mb-1">Model</label>
+				<select
+					value={model}
+					onChange={handleModelChange}
+					className="w-full bg-[#0a0a0a] text-xs text-white rounded-lg border border-white/10 p-2 focus:outline-none focus:border-[#dfff4f]/50 cursor-pointer">
+					<option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+					<option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Next Gen)</option>
+					<option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+				</select>
 
 				{/* Output Display Area */}
 				<div className="bg-[#2a2a2a] rounded-lg border border-white/10 flex flex-col">
@@ -358,7 +380,7 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 					disabled={data.status === "loading"}
 					className={cn(
 						"flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all",
-						data.status === "loading" ? "bg-white/5 text-white/30 cursor-not-allowed" : "bg-white/90 text-black hover:bg-white active:scale-95"
+						data.status === "loading" ? "bg-white/5 text-white/30 cursor-not-allowed" : "bg-white/90 text-black hover:bg-white active:scale-95",
 					)}>
 					{data.status === "loading" ? (
 						<>
@@ -373,40 +395,12 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 				</button>
 			</div>
 
-			{/* System Prompt Handle */}
-			<div className="absolute left-0" style={{top: "30%"}}>
-				<Handle
-					type="target"
-					position={Position.Left}
-					id="system-prompt"
-					isConnectable={isConnectable}
-					onMouseEnter={() => setHoveredHandle("system-prompt")}
-					onMouseLeave={() => setHoveredHandle(null)}
-					className="!w-2.5 !h-2.5 !bg-[#1a1a1a] !border-2 !border-emerald-400"
-				/>
-				{hoveredHandle === "system-prompt" && (
-					<div className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/90 text-emerald-400 text-[10px] font-semibold px-2 py-1 rounded whitespace-nowrap z-50 pointer-events-none">
-						System Prompt
-					</div>
-				)}
+			{/* HANDLES: These IDs are Critical for the Orchestrator */}
+			<div className="absolute left-0 top-[30%]">
+				<Handle type="target" position={Position.Left} id="system-prompt" isConnectable={isConnectable} className="!w-3 !h-3 !bg-emerald-500" />
 			</div>
-
-			{/* Prompt Handle */}
-			<div className="absolute left-0" style={{top: "45%"}}>
-				<Handle
-					type="target"
-					position={Position.Left}
-					id="prompt"
-					isConnectable={isConnectable}
-					onMouseEnter={() => setHoveredHandle("prompt")}
-					onMouseLeave={() => setHoveredHandle(null)}
-					className="!w-2.5 !h-2.5 !bg-[#1a1a1a] !border-2 !border-pink-400"
-				/>
-				{hoveredHandle === "prompt" && (
-					<div className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/90 text-pink-400 text-[10px] font-semibold px-2 py-1 rounded whitespace-nowrap z-50 pointer-events-none">
-						Prompt
-					</div>
-				)}
+			<div className="absolute left-0 top-[50%]">
+				<Handle type="target" position={Position.Left} id="prompt" isConnectable={isConnectable} className="!w-3 !h-3 !bg-pink-500" />
 			</div>
 
 			{/* Dynamic Image Handles */}
