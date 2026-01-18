@@ -2,7 +2,7 @@
 
 import React, {useEffect, useState} from "react";
 import {useParams} from "next/navigation";
-import {Loader2} from "lucide-react";
+import {Loader2, Clock} from "lucide-react";
 import dynamic from "next/dynamic";
 import Sidebar from "@/components/workflow/Sidebar";
 import SidebarNodeList from "@/components/workflow/SidebarNodeList";
@@ -10,6 +10,7 @@ import Header from "@/components/workflow/Header";
 import {useWorkflowStore} from "@/store/workflowStore";
 import {loadWorkflowAction} from "@/app/actions/workflowActions";
 import {DEMO_WORKFLOWS} from "@/lib/demoWorkflows";
+import HistorySidebar from "@/components/workflow/HistorySidebar"; // Ensure this import exists
 
 // 1. DYNAMIC IMPORT: Disables SSR for the Canvas
 // This replaces the need for useState/useEffect isMounted checks
@@ -23,6 +24,7 @@ export default function EditorPage() {
 
 	const [loading, setLoading] = useState(true);
 	const {setWorkflowId} = useWorkflowStore();
+	const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
 	useEffect(() => {
 		async function initializeWorkflow() {
@@ -127,16 +129,27 @@ export default function EditorPage() {
 			{/* 1. Header at the top */}
 			<Header />
 
-			<div className="flex flex-1 h-full overflow-hidden">
-				{/* 2. Sidebar on the left */}
+			<div className="flex flex-1 h-full overflow-hidden relative">
+				{/* ^ Add 'relative' to the container so the absolute sidebar works */}
+
 				<Sidebar>
 					<SidebarNodeList />
 				</Sidebar>
 
-				{/* 3. Editor Canvas */}
 				<main className="flex-1 relative h-full">
 					<FlowEditor />
+
+					{/* Floating Toggle Button (Temporary, usually goes in Header) */}
+					<button
+						onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+						className="absolute top-4 right-4 z-10 bg-black/50 border border-white/20 text-white p-2 rounded hover:bg-white/10 transition-colors"
+						title="View History">
+						<Clock size={20} />
+					</button>
 				</main>
+
+				{/* The History Sidebar */}
+				<HistorySidebar workflowId={workflowId} isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} />
 			</div>
 		</div>
 	);

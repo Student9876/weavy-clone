@@ -191,25 +191,45 @@ export async function deleteWorkflowAction(id: string) {
 // RUN ACTION (Trigger.dev)
 // ------------------------------------------------------------------
 export async function runWorkflowAction(workflowId: string) {
+    console.log(`[Action] Attempting to run workflow: "${workflowId}"`); // 🔍 DEBUG LOG
+
     try {
         const { userId } = await auth();
-        if (!userId) return { success: false, error: "Unauthorized" };
+        if (!userId) {
+            console.error("[Action] User not found");
+            return { success: false, error: "Unauthorized" };
+        }
+
+        // 1. Validate ID
+        const numericId = parseInt(workflowId);
+        if (isNaN(numericId)) {
+            console.error(`[Action] Invalid Workflow ID: ${workflowId}`);
+            return { success: false, error: "Invalid Workflow ID. Please save the file first." };
+        }
+
+        // 2. Create the PENDING record
+        console.log(`[Action] Creating DB Record for ID: ${numericId}...`);
 
         const run = await prisma.workflowRun.create({
             data: {
-                workflowId: parseInt(workflowId),
+                workflowId: numericId,
                 status: "PENDING",
                 triggerType: "MANUAL",
             },
         });
 
+        console.log(`[Action] ✅ Run Created! Run ID: ${run.id}`);
+
+        // 3. Trigger the Task
+        console.log(`[Action] Triggering Orchestrator...`);
         await tasks.trigger("workflow-orchestrator", {
             runId: run.id,
         });
 
         return { success: true, runId: run.id };
+
     } catch (error) {
-        console.error("Run Workflow Error:", error);
-        return { success: false, error: "Failed to run workflow." };
+        console.error("[Action] ❌ CRITICAL FAILURE:", error); // 👈 This will show the real error
+        return { success: false, error: "Failed to run workflow. Check server logs." };
     }
 }

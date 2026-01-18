@@ -3,16 +3,13 @@
 import React, {useState, useCallback} from "react";
 import {Save, Loader2, Share2, FolderOpen} from "lucide-react";
 import {useWorkflowStore} from "@/store/workflowStore";
-import {saveWorkflowAction} from "@/app/actions/workflowActions";
+import {saveWorkflowAction, runWorkflowAction} from "@/app/actions/workflowActions";
 import LoadWorkflowModal from "./LoadWorkflowModal";
 
 export default function Header() {
-	// 1. Get state and actions from the store - now includes workflowName
 	const {nodes, edges, workflowId, workflowName, setWorkflowId, setWorkflowName} = useWorkflowStore();
 	const [isSaving, setIsSaving] = useState(false);
 	const [isLoadOpen, setIsLoadOpen] = useState(false);
-
-	// 2. Remove local workflowName state - now using store
 	const [isEditingName, setIsEditingName] = useState(false);
 
 	// --- HANDLE SAVE (Existing Logic) ---
@@ -25,25 +22,54 @@ export default function Header() {
 		setIsSaving(true);
 
 		try {
-			const result = await saveWorkflowAction({
+			const res = await saveWorkflowAction({
 				id: workflowId,
 				name: workflowName,
 				nodes,
 				edges,
 			});
 
-			if (result.success && result.id) {
-				setWorkflowId(result.id);
-				alert(`Saved! (ID: ${result.id})`);
-			} else if (result.success) {
+			if (res.success && res.id) {
+				setWorkflowId(res.id); // 👈 Critical: Update store with new ID
+				alert(`Saved! (ID: ${res.id})`);
+				return res.id;
+			} else if (res.success) {
 				alert("Saved, but no ID returned.");
 			} else {
-				alert(`Error: ${result.error}`);
+				alert(`Error: ${res.error}`);
 			}
 		} catch (error) {
 			console.error(error);
 		} finally {
 			setIsSaving(false);
+		}
+	};
+
+	// --- HANDLE RUN (New Logic) ---
+	const handleRun = async () => {
+		let currentId = workflowId;
+
+		// 1. IF NEW FILE: Force Save First
+		if (!currentId || currentId === "new") {
+			console.log("New file detected. Saving first...");
+			const savedId = await handleSave();
+			if (!savedId) return; // Stop if save failed
+			currentId = savedId;
+		}
+
+		// 2. NOW Run with the valid ID
+		console.log("Running workflow with ID:", currentId);
+
+		try {
+			const res = await runWorkflowAction(currentId);
+			if (res.success) {
+				// It worked!
+				alert(`Workflow run started! Run ID: ${res.runId}`);
+			} else {
+				alert("Run Failed: " + res.error);
+			}
+		} catch (err) {
+			alert("Error starting run");
 		}
 	};
 
