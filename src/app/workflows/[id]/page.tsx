@@ -26,7 +26,7 @@ export default function EditorPage() {
 	const {setWorkflowId} = useWorkflowStore();
 	const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-	// 👇 Add this state for sidebar toggle
+
 	const [isSidebarOpen, setSidebarOpen] = useState(true);
 
 	useEffect(() => {

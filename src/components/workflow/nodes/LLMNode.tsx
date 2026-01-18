@@ -2,20 +2,35 @@
 
 import React, {useCallback, useState, useEffect, useRef} from "react";
 import {Handle, Position, NodeProps, useReactFlow, useUpdateNodeInternals} from "@xyflow/react";
-import {Bot, Plus, Loader2, MoreHorizontal, Settings2, Copy, Check, Trash2, X} from "lucide-react";
+import {Bot, Plus, Loader2, MoreHorizontal, Check, Copy, Trash2, X} from "lucide-react";
 import {cn} from "@/lib/utils";
 import type {LLMNodeData, LLMNodeType, TextNodeData, ImageNodeData} from "@/lib/types";
 import {useWorkflowStore} from "@/store/workflowStore";
 import {useAuth} from "@clerk/nextjs";
 
+// Helper to fetch base64
+async function urlToBase64(url: string): Promise<string> {
+	try {
+		const response = await fetch(url);
+		const blob = await response.blob();
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onloadend = () => resolve(reader.result as string);
+			reader.onerror = reject;
+			reader.readAsDataURL(blob);
+		});
+	} catch (error) {
+		console.error("Failed to convert URL to base64:", error);
+		throw error;
+	}
+}
+
 export default function LLMNode({id, data, isConnectable, selected}: NodeProps<LLMNodeType>) {
 	const {userId} = useAuth();
-	// Use individual selectors to avoid infinite loop
 	const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
 	const deleteNode = useWorkflowStore((state) => state.deleteNode);
-
 	const {getNodes, getEdges, setEdges} = useReactFlow();
-	const updateNodeInternals = useUpdateNodeInternals(); // Add this hook
+	const updateNodeInternals = useUpdateNodeInternals();
 
 	const [hoveredHandle, setHoveredHandle] = useState<string | null>(null);
 	const [copied, setCopied] = useState(false);
@@ -23,15 +38,19 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 	const menuRef = useRef<HTMLDivElement>(null);
 	const [model, setModel] = useState<string>(data.model || "gemini-1.5-flash");
 
-	// Get imageHandleCount from node data (persisted), default to 1 if not set
 	const imageHandleCount = data.imageHandleCount ?? 1;
 
-	// Update node internals when handle count changes
+	// Layout constants
+	const BASE_HEIGHT = 400;
+	const HANDLE_START_Y = 270;
+	const HANDLE_SPACING = 40;
+	const requiredHeight = Math.max(BASE_HEIGHT, HANDLE_START_Y + imageHandleCount * HANDLE_SPACING + 60);
+
+	// FIX 1: Remove 'requiredHeight' from dependencies
 	useEffect(() => {
 		updateNodeInternals(id);
 	}, [id, imageHandleCount, updateNodeInternals]);
 
-	// Close menu when clicking outside
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
 			if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -44,6 +63,7 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 
 	const onModelChange = useCallback(
 		(e: React.ChangeEvent<HTMLSelectElement>) => {
+			setModel(e.target.value);
 			updateNodeData(id, {model: e.target.value as LLMNodeData["model"]});
 		},
 		[id, updateNodeData],
@@ -65,27 +85,19 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 	const handleRemoveImageInput = useCallback(
 		(index: number) => {
 			if (imageHandleCount <= 1) return;
-
-			// Remove edges connected to handles that will no longer exist
 			setEdges((edges) =>
 				edges.filter((edge) => {
-					// Keep edges that aren't connected to this node's image handles
 					if (edge.target !== id) return true;
 					if (!edge.targetHandle?.startsWith("image")) return true;
-
-					// Remove edges connected to handles >= the new count
 					const handleIndex = parseInt(edge.targetHandle.split("-")[1]);
 					return handleIndex < imageHandleCount - 1;
 				}),
 			);
-
-			// Decrement the count
 			updateNodeData(id, {imageHandleCount: imageHandleCount - 1});
 		},
 		[imageHandleCount, id, updateNodeData, setEdges],
 	);
 
-	// 👇 UPDATED HANDLE RUN FUNCTION
 	const handleRun = useCallback(async () => {
 		if (!userId) {
 			updateNodeData(id, {status: "error", errorMessage: "You must be signed in."});
@@ -93,28 +105,20 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 		}
 
 		updateNodeData(id, {status: "loading", errorMessage: undefined});
-		console.log("--- RUN STARTED ---");
-
 		try {
 			const allNodes = getNodes();
 			const allEdges = getEdges();
 			const incomingEdges = allEdges.filter((edge) => edge.target === id);
 
-			console.log(`Found ${incomingEdges.length} connections to this node`);
-
-			let systemPromptBase = ""; // From text nodes connected to system-prompt
-			let userPromptBase = ""; // From text nodes connected to prompt
-			let incomingContext = ""; // From upstream LLM nodes
+			let systemPromptBase = "";
+			let userPromptBase = "";
+			let incomingContext = "";
 			const imageUrls: string[] = [];
 
-			// Collect inputs based on handle IDs
 			for (const edge of incomingEdges) {
 				const sourceNode = allNodes.find((n) => n.id === edge.source);
 				if (!sourceNode) continue;
 
-				console.log(`Connected node type: ${sourceNode.type}, target handle: ${edge.targetHandle}`);
-
-				// Handle Text Nodes (direct text input)
 				if (sourceNode.type === "textNode") {
 					const text = (sourceNode.data as TextNodeData).text;
 					if (edge.targetHandle === "system-prompt") {
@@ -124,77 +128,40 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 					}
 				}
 
-				// Handle LLM Nodes (chaining) - Accumulate context from upstream outputs
 				if (sourceNode.type === "llmNode") {
 					const outputs = (sourceNode.data as LLMNodeData).outputs;
 					if (outputs && outputs.length > 0) {
 						const lastOutput = outputs[outputs.length - 1].content || "";
-						const nodeLabel = (sourceNode.data as LLMNodeData).label || "Previous Step";
-
 						if (edge.targetHandle === "system-prompt") {
-							// Add to context with label for clarity
-							incomingContext += `\n\n--- CONTEXT FROM: ${nodeLabel} ---\n${lastOutput}`;
+							incomingContext += `\n\n--- CONTEXT ---\n${lastOutput}`;
 						} else if (edge.targetHandle === "prompt") {
-							// If connected to prompt handle, use as user prompt
 							userPromptBase = lastOutput;
 						}
 					}
 				}
 
-				// Handle Image Nodes (connected to any image handle)
 				if (sourceNode.type === "imageNode" && edge.targetHandle?.startsWith("image")) {
 					const imageData = sourceNode.data as ImageNodeData;
-
-					// Check both file.url (manual upload) and image (demo/preloaded)
 					const imageUrl = imageData.file?.url || imageData.image;
 
+					// FIX 2: Type check for imageUrl
 					if (imageUrl && typeof imageUrl === "string") {
-						console.log("Found image:", imageData.file?.name || "image");
-
-						// Check if it's already base64 or needs conversion
 						if (imageUrl.startsWith("data:")) {
-							// Already base64
 							imageUrls.push(imageUrl);
 						} else if (imageUrl.startsWith("/") || imageUrl.startsWith("http")) {
-							// Public URL - needs conversion
-							console.log("Converting URL to base64:", imageUrl);
 							try {
 								const base64 = await urlToBase64(imageUrl);
 								imageUrls.push(base64);
 							} catch (error) {
-								console.error("Failed to convert image:", error);
-								throw new Error(`Failed to load image: ${imageUrl}`);
+								console.error(error);
 							}
-						} else {
-							imageUrls.push(imageUrl);
 						}
 					}
 				}
 			}
 
-			// Construct final prompts
-			// Combine system prompt base with incoming context from upstream nodes
-			let finalSystemPrompt = systemPromptBase;
-			if (incomingContext) {
-				finalSystemPrompt += incomingContext;
-			}
-
-			// Use user prompt or default trigger message
-			const finalUserPrompt = userPromptBase || "Process this request based on the system instructions and context.";
-
-			console.log("Final Inputs:", {
-				systemPrompt: finalSystemPrompt.substring(0, 100) + "...",
-				userPrompt: finalUserPrompt.substring(0, 100) + "...",
-				imageCount: imageUrls.length,
-			});
-
-			// Validation - require at least some input
-			if (!finalSystemPrompt.trim() && !finalUserPrompt.trim() && imageUrls.length === 0) {
-				throw new Error("Input required: Connect a prompt or image");
-			}
-
-			// Call API route with validated data
-			console.log("Using model:", data.model);
+			const finalSystemPrompt = systemPromptBase + (incomingContext || "");
+			const finalUserPrompt = userPromptBase || "Process this request.";
 
 			const response = await fetch("/api/llm/execute", {
 				method: "POST",
@@ -217,34 +184,24 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 				throw new Error(result.error || "Failed to generate content");
 			}
 
-			// 👇 CRITICAL FIX: Extract clean text from raw object
 			let finalContent = "No output.";
-
-			// Scenario 1: Clean text response
 			if (typeof result.text === "string") {
 				finalContent = result.text;
-			}
-			// Scenario 2: Nested output (Trigger.dev object)
-			else if (result.output && typeof result.output.text === "string") {
+			} else if (result.output && typeof result.output.text === "string") {
 				finalContent = result.output.text;
-			}
-			// Scenario 3: The "Bogus" Object you saw
-			else if (result.output && result.output.output && result.output.output.text) {
-				finalContent = result.output.output.text;
-			}
-			// Fallback: If it's still an object, try to find a 'text' key anywhere
-			else if (typeof result === "object") {
-				finalContent = result.text || result.output?.text || JSON.stringify(result, null, 2);
+			} else if (typeof result.output === "string") {
+				finalContent = result.output;
+			} else {
+				finalContent = JSON.stringify(result.output || result, null, 2);
 			}
 
-			// Double-check for double-encoded JSON strings (common with AI)
 			try {
-				if (typeof finalContent === "string" && (finalContent.startsWith("{") || finalContent.startsWith('"'))) {
+				if (finalContent.startsWith("{") || finalContent.startsWith('"')) {
 					const parsed = JSON.parse(finalContent);
 					if (parsed.text) finalContent = parsed.text;
 				}
 			} catch (e) {
-				// Not JSON, keep as is
+				// Not JSON
 			}
 
 			updateNodeData(id, {
@@ -253,7 +210,7 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 					{
 						id: crypto.randomUUID(),
 						type: "text",
-						content: finalContent, // 👈 Clean text
+						content: finalContent,
 						timestamp: Date.now(),
 					},
 				],
@@ -264,25 +221,25 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 		}
 	}, [id, updateNodeData, getNodes, getEdges, data.model, data.temperature, userId]);
 
-	const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-		setModel(e.target.value);
-		updateNodeData(id, {model: e.target.value});
-	};
-
 	return (
 		<div
+			style={{minHeight: `${requiredHeight}px`}}
 			className={cn(
-				"rounded-xl border bg-[#1a1a1a] min-w-[320px] max-w-[400px] shadow-2xl transition-all duration-200 flex flex-col max-h-[600px]",
+				"relative rounded-xl border bg-[#1a1a1a] min-w-[320px] max-w-[400px] shadow-2xl transition-all duration-300 flex flex-col",
 				selected ? "border-[#dfff4f] ring-1 ring-[#dfff4f]/50" : "border-white/10 hover:border-white/30",
 				data.status === "error" && "border-red-500 ring-1 ring-red-500/50",
 			)}>
+			{/* Glow effect */}
+			{data.status === "loading" && (
+				<div className="absolute -inset-[1px] rounded-xl border-2 border-[#dfff4f] shadow-[0_0_30px_rgba(223,255,79,0.3)] animate-pulse pointer-events-none z-50" />
+			)}
+
 			{/* Header */}
 			<div className="flex items-center justify-between px-3 py-2.5 border-b border-white/5 bg-[#111] rounded-t-xl">
 				<div className="flex items-center gap-2">
 					<span className="text-xs font-semibold text-white">{data.model || "gemini-2.5-flash"}</span>
 				</div>
 
-				{/* Menu Button with Dropdown */}
 				<div className="relative" ref={menuRef}>
 					<button
 						onClick={(e) => {
@@ -293,7 +250,6 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 						<MoreHorizontal size={14} />
 					</button>
 
-					{/* Dropdown Menu */}
 					{showMenu && (
 						<div className="absolute right-0 top-6 w-32 bg-[#222] border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden">
 							<button
@@ -311,21 +267,18 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 			</div>
 
 			{/* Body */}
-			<div className="p-4">
-				{/* Model Selection */}
+			<div className="p-4 flex-1 flex flex-col">
 				<label className="block text-xs text-white/60 mb-1">Model</label>
 				<select
 					value={model}
-					onChange={handleModelChange}
-					className="w-full bg-[#0a0a0a] text-xs text-white rounded-lg border border-white/10 p-2 focus:outline-none focus:border-[#dfff4f]/50 cursor-pointer">
+					onChange={onModelChange}
+					className="w-full bg-[#0a0a0a] text-xs text-white rounded-lg border border-white/10 p-2 focus:outline-none focus:border-[#dfff4f]/50 cursor-pointer mb-3">
 					<option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
 					<option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Next Gen)</option>
 					<option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
 				</select>
 
-				{/* Output Display Area */}
-				<div className="bg-[#2a2a2a] rounded-lg border border-white/10 flex flex-col">
-					{/* Header with Copy Button */}
+				<div className="bg-[#2a2a2a] rounded-lg border border-white/10 flex flex-col flex-1 min-h-[150px]">
 					{data.status === "success" && data.outputs && data.outputs.length > 0 && (
 						<div className="flex items-center justify-between px-3 py-2 border-b border-white/5">
 							<span className="text-[10px] text-white/40 uppercase font-semibold">Output</span>
@@ -334,21 +287,18 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 								className="flex items-center gap-1 px-2 py-1 text-[10px] text-white/60 hover:text-white/90 hover:bg-white/5 rounded transition-colors">
 								{copied ? (
 									<>
-										<Check size={11} />
-										Copied!
+										<Check size={11} /> Copied!
 									</>
 								) : (
 									<>
-										<Copy size={11} />
-										Copy
+										<Copy size={11} /> Copy
 									</>
 								)}
 							</button>
 						</div>
 					)}
 
-					{/* Content Area with Fixed Height */}
-					<div className="p-3 overflow-y-auto custom-scrollbar" style={{height: "180px", maxHeight: "180px"}}>
+					<div className="p-3 overflow-y-auto custom-scrollbar flex-1">
 						{data.status === "loading" ? (
 							<div className="flex items-center justify-center h-full">
 								<Loader2 size={20} className="animate-spin text-white/30" />
@@ -366,13 +316,13 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 				</div>
 			</div>
 
-			{/* Footer: Add image + Run button */}
+			{/* Footer */}
 			<div className="px-6 mb-6 pb-3 flex items-center justify-between gap-2">
 				<button
 					onClick={handleAddImageInput}
 					className="flex items-center gap-1.5 text-[11px] text-white/50 hover:text-white/80 transition-colors font-medium">
 					<Plus size={12} />
-					Add another image input
+					Add image
 				</button>
 
 				<button
@@ -395,19 +345,43 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 				</button>
 			</div>
 
-			{/* HANDLES: These IDs are Critical for the Orchestrator */}
-			<div className="absolute left-0 top-[30%]">
-				<Handle type="target" position={Position.Left} id="system-prompt" isConnectable={isConnectable} className="!w-3 !h-3 !bg-emerald-500" />
+			{/* Handles */}
+			<div className="absolute left-0" style={{top: "160px"}}>
+				<Handle
+					type="target"
+					position={Position.Left}
+					id="system-prompt"
+					isConnectable={isConnectable}
+					onMouseEnter={() => setHoveredHandle("system-prompt")}
+					onMouseLeave={() => setHoveredHandle(null)}
+					className="!w-2.5 !h-2.5 !bg-[#1a1a1a] !border-2 !border-emerald-400"
+				/>
+				{hoveredHandle === "system-prompt" && (
+					<div className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/90 text-emerald-400 text-[10px] px-2 py-1 rounded z-50 pointer-events-none whitespace-nowrap">
+						System Prompt
+					</div>
+				)}
 			</div>
-			<div className="absolute left-0 top-[50%]">
-				<Handle type="target" position={Position.Left} id="prompt" isConnectable={isConnectable} className="!w-3 !h-3 !bg-pink-500" />
+			<div className="absolute left-0" style={{top: "210px"}}>
+				<Handle
+					type="target"
+					position={Position.Left}
+					id="prompt"
+					isConnectable={isConnectable}
+					onMouseEnter={() => setHoveredHandle("prompt")}
+					onMouseLeave={() => setHoveredHandle(null)}
+					className="!w-2.5 !h-2.5 !bg-[#1a1a1a] !border-2 !border-pink-400"
+				/>
+				{hoveredHandle === "prompt" && (
+					<div className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/90 text-pink-400 text-[10px] px-2 py-1 rounded z-50 pointer-events-none whitespace-nowrap">
+						Prompt
+					</div>
+				)}
 			</div>
-
-			{/* Dynamic Image Handles */}
 			{Array.from({length: imageHandleCount}).map((_, index) => {
-				const topPosition = 60 + index * 10; // Start at 60%, increment by 10%
+				const topPosition = HANDLE_START_Y + index * HANDLE_SPACING;
 				return (
-					<div key={`image-${index}`} className="absolute left-0 flex items-center" style={{top: `${topPosition}%`}}>
+					<div key={`image-${index}`} className="absolute left-0 flex items-center" style={{top: `${topPosition}px`}}>
 						<Handle
 							type="target"
 							position={Position.Left}
@@ -418,7 +392,7 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 							className="!w-2.5 !h-2.5 !bg-[#1a1a1a] !border-2 !border-purple-400"
 						/>
 						{hoveredHandle === `image-${index}` && (
-							<div className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/90 text-purple-400 text-[10px] font-semibold px-2 py-1 rounded whitespace-nowrap z-50 pointer-events-none flex items-center gap-2">
+							<div className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/90 text-purple-400 text-[10px] px-2 py-1 rounded z-50 pointer-events-none flex items-center gap-2 whitespace-nowrap">
 								Image {index + 1}
 								{imageHandleCount > 1 && (
 									<button
@@ -426,7 +400,7 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 											e.stopPropagation();
 											handleRemoveImageInput(index);
 										}}
-										className="hover:text-red-400 transition-colors">
+										className="hover:text-red-400 transition-colors pointer-events-auto">
 										<X size={10} />
 									</button>
 								)}
@@ -435,8 +409,6 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 					</div>
 				);
 			})}
-
-			{/* 🚀 NEW: Output Source Handle (Right Side) */}
 			<div className="absolute right-0 top-1/2 -translate-y-1/2">
 				<Handle
 					type="source"
@@ -455,21 +427,4 @@ export default function LLMNode({id, data, isConnectable, selected}: NodeProps<L
 			</div>
 		</div>
 	);
-}
-
-// Helper: Convert image URL to base64
-async function urlToBase64(url: string): Promise<string> {
-	try {
-		const response = await fetch(url);
-		const blob = await response.blob();
-		return new Promise((resolve, reject) => {
-			const reader = new FileReader();
-			reader.onloadend = () => resolve(reader.result as string);
-			reader.onerror = reject;
-			reader.readAsDataURL(blob);
-		});
-	} catch (error) {
-		console.error("Failed to convert URL to base64:", error);
-		throw error;
-	}
 }
