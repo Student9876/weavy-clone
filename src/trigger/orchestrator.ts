@@ -49,10 +49,14 @@ export const orchestrator = task({
                     prompt: node.data.prompt || "Explain Quantum Computing",
                 });
 
-                // Update DB with SUCCESS
+                // FIX: Cast result to 'any' to satisfy Prisma's strict JSON type
                 await prisma.nodeExecution.update({
                     where: { id: executionRecord.id },
-                    data: { status: "SUCCESS", finishedAt: new Date(), outputData: result ?? {} },
+                    data: {
+                        status: "SUCCESS",
+                        finishedAt: new Date(),
+                        outputData: (result ?? {}) as any
+                    },
                 });
 
             } catch (error) {

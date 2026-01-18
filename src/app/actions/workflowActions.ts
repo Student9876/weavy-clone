@@ -3,15 +3,15 @@
 import prisma from "@/lib/prisma";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { tasks } from "@trigger.dev/sdk/v3";
+import type { SaveWorkflowParams } from "@/lib/types";
 
 // Helper to ensure User exists in our DB before acting
 async function ensureUserExists(userId: string) {
-    // 1. Check if user exists in DB
     const dbUser = await prisma.user.findUnique({
         where: { id: userId },
     });
 
-    // 2. If not, fetch details from Clerk and create them
     if (!dbUser) {
         const clerkUser = await currentUser();
         if (!clerkUser) throw new Error("User not found in Clerk");
@@ -27,37 +27,41 @@ async function ensureUserExists(userId: string) {
     }
 }
 
-export async function saveWorkflowAction({ id, name, nodes, edges }: any) {
+// ------------------------------------------------------------------
+// SAVE ACTION
+// ------------------------------------------------------------------
+export async function saveWorkflowAction({ id, name, nodes, edges }: SaveWorkflowParams) {
     try {
         const { userId } = await auth();
         if (!userId) return { success: false, error: "Unauthorized" };
 
-        // FIX: Sync User to DB before creating workflow
         await ensureUserExists(userId);
 
-        const workflowData = { nodes, edges }; // JSON data
+        // FIX: Prepare JSON data
+        // We cast to 'any' because Prisma's InputJsonValue is stricter than 
+        // our complex Node types, even though they are valid JSON at runtime.
+        const workflowData = { nodes, edges };
 
         if (id) {
             // UPDATE Existing
             console.log(`Updating Workflow ID: ${id}`);
 
-            // Ensure ID is an Integer (Prisma Schema uses Int)
             const numericId = typeof id === "string" ? parseInt(id) : id;
+            if (!numericId) return { success: false, error: "Invalid Workflow ID" };
 
             const workflow = await prisma.workflow.update({
                 where: {
                     id: numericId,
-                    userId: userId // Security: Ensure ownership
+                    userId: userId,
                 },
                 data: {
                     name,
-                    data: workflowData,
+                    data: workflowData as any, // 👈 THE FIX: Cast to any
                 },
             });
 
             revalidatePath("/workflows");
             return { success: true, id: workflow.id.toString() };
-
         } else {
             // CREATE New
             console.log(`Creating New Workflow for: ${userId}`);
@@ -65,21 +69,23 @@ export async function saveWorkflowAction({ id, name, nodes, edges }: any) {
             const workflow = await prisma.workflow.create({
                 data: {
                     name,
-                    data: workflowData,
-                    userId, // Connects strictly to the user
+                    data: workflowData as any,
+                    userId,
                 },
             });
 
             revalidatePath("/workflows");
             return { success: true, id: workflow.id.toString() };
         }
-
     } catch (error) {
         console.error("Database Error:", error);
         return { success: false, error: "Failed to save workflow." };
     }
 }
 
+// ------------------------------------------------------------------
+// LOAD ACTION
+// ------------------------------------------------------------------
 export async function loadWorkflowAction(id: string) {
     try {
         const { userId } = await auth();
@@ -88,27 +94,32 @@ export async function loadWorkflowAction(id: string) {
         const workflow = await prisma.workflow.findUnique({
             where: {
                 id: parseInt(id),
-                userId: userId // Security check
+                userId: userId,
             },
         });
 
         if (!workflow) return { success: false, error: "Workflow not found" };
 
-        // Cast the JSON data back to what the frontend expects
-        const graphData = workflow.data as any;
+        // Define a type for workflow data if not already defined
+        type WorkflowData = {
+            nodes: unknown[];
+            edges: unknown[];
+        };
 
         return {
             success: true,
-            data: graphData,
+            data: workflow.data as WorkflowData,
             name: workflow.name,
         };
-
     } catch (error) {
         console.error("Load Error:", error);
         return { success: false, error: "Failed to load workflow." };
     }
 }
 
+// ------------------------------------------------------------------
+// GET ALL ACTION
+// ------------------------------------------------------------------
 export async function getAllWorkflowsAction() {
     try {
         const { userId } = await auth();
@@ -122,24 +133,40 @@ export async function getAllWorkflowsAction() {
                 name: true,
                 updatedAt: true,
                 createdAt: true,
-            }
+            },
         });
 
-        // Convert Int ID to String for Frontend compatibility
-        const formattedWorkflows = workflows.map(wf => ({
-            ...wf,
+        interface WorkflowSummary {
+            id: string;
+            name: string;
+            created_at: string;
+            updated_at: string;
+        }
+
+        interface PrismaWorkflow {
+            id: number;
+            name: string;
+            createdAt: Date;
+            updatedAt: Date;
+        }
+
+        const formattedWorkflows: WorkflowSummary[] = (workflows as PrismaWorkflow[]).map((wf: PrismaWorkflow) => ({
             id: wf.id.toString(),
-            updated_at: wf.updatedAt.toISOString(), // Normalize Date to String
+            name: wf.name,
+            created_at: wf.createdAt.toISOString(),
+            updated_at: wf.updatedAt.toISOString(),
         }));
 
         return { success: true, workflows: formattedWorkflows };
-
     } catch (error) {
         console.error("Fetch Workflows Error:", error);
         return { success: false, error: "Failed to fetch workflows.", workflows: [] };
     }
 }
 
+// ------------------------------------------------------------------
+// DELETE ACTION
+// ------------------------------------------------------------------
 export async function deleteWorkflowAction(id: string) {
     try {
         const { userId } = await auth();
@@ -154,9 +181,35 @@ export async function deleteWorkflowAction(id: string) {
 
         revalidatePath("/workflows");
         return { success: true };
-
     } catch (error) {
         console.error("Delete Error:", error);
         return { success: false, error: "Failed to delete workflow." };
+    }
+}
+
+// ------------------------------------------------------------------
+// RUN ACTION (Trigger.dev)
+// ------------------------------------------------------------------
+export async function runWorkflowAction(workflowId: string) {
+    try {
+        const { userId } = await auth();
+        if (!userId) return { success: false, error: "Unauthorized" };
+
+        const run = await prisma.workflowRun.create({
+            data: {
+                workflowId: parseInt(workflowId),
+                status: "PENDING",
+                triggerType: "MANUAL",
+            },
+        });
+
+        await tasks.trigger("workflow-orchestrator", {
+            runId: run.id,
+        });
+
+        return { success: true, runId: run.id };
+    } catch (error) {
+        console.error("Run Workflow Error:", error);
+        return { success: false, error: "Failed to run workflow." };
     }
 }

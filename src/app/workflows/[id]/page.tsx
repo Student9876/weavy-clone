@@ -33,7 +33,7 @@ export default function EditorPage() {
 
 			setLoading(true);
 
-			//  Check for Demo Template
+			// Check for Demo Template
 			const demo = DEMO_WORKFLOWS.find((d) => d.id === workflowId);
 			if (demo) {
 				console.log("Loading Demo Template:", demo.name);
@@ -70,15 +70,22 @@ export default function EditorPage() {
 			// Try loading from the Database
 			try {
 				const res = await loadWorkflowAction(workflowId);
-				if (res.success && res.data) {
-					const flowData = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
 
-					useWorkflowStore.setState({
-						nodes: flowData.nodes || [],
-						edges: flowData.edges || [],
-						workflowId: workflowId,
-						workflowName: res.name || "Untitled Workflow",
-					});
+				// FIX: Cast 'res' to any to bypass the "Property does not exist on type never" error
+				// This is necessary because TS struggles with the Discriminated Union from the Server Action
+				if ((res as any).success) {
+					const rawData = (res as any).data;
+
+					if (rawData) {
+						const flowData = typeof rawData === "string" ? JSON.parse(rawData) : rawData;
+
+						useWorkflowStore.setState({
+							nodes: flowData.nodes || [],
+							edges: flowData.edges || [],
+							workflowId: workflowId,
+							workflowName: (res as any).name || "Untitled Workflow",
+						});
+					}
 				} else {
 					// Workflow not found, start with empty state
 					console.log("Workflow not found, starting fresh.");

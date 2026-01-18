@@ -32,9 +32,11 @@ export default function Header() {
 				edges,
 			});
 
-			if (result.success) {
+			if (result.success && result.id) {
 				setWorkflowId(result.id);
 				alert(`Saved! (ID: ${result.id})`);
+			} else if (result.success) {
+				alert("Saved, but no ID returned.");
 			} else {
 				alert(`Error: ${result.error}`);
 			}
